@@ -21,17 +21,35 @@
 package com.example.dto;
 
 import com.example.enums.TransactionType;
-import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Data
+// NOTE: Lombok (@Data) intentionally not used - see entity/Transaction.java note.
 public class TransactionRequest {
 
-    private String accountId;
-    private String payeeId;
+    private Integer accountId;
+    private Integer payeeId;
     private BigDecimal amount;
     private String currency;
     private TransactionType type;
     private String description;
+    private String location;
+    private String merchantCategory;
+
+    public Integer getAccountId() { return accountId; }
+    public void setAccountId(Integer accountId) { this.accountId = accountId; }
+    public Integer getPayeeId() { return payeeId; }
+    public void setPayeeId(Integer payeeId) { this.payeeId = payeeId; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
+    public TransactionType getType() { return type; }
+    public void setType(TransactionType type) { this.type = type; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+    public String getMerchantCategory() { return merchantCategory; }
+    public void setMerchantCategory(String merchantCategory) { this.merchantCategory = merchantCategory; }
 }

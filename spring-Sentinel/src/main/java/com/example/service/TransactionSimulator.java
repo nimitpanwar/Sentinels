@@ -35,28 +35,41 @@
 package com.example.service;
 
 import com.example.dto.TransactionRequest;
+import com.example.entity.Payee;
 import com.example.enums.TransactionSource;
 import com.example.enums.TransactionType;
+import com.example.repository.AccountRepository;
+import com.example.repository.PayeeRepository;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Slf4j
+// NOTE: Lombok (@Slf4j/@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
 @Service
-@RequiredArgsConstructor
 public class TransactionSimulator {
 
+    private static final Logger log = LoggerFactory.getLogger(TransactionSimulator.class);
+
     private final TransactionService transactionService;
+    private final AccountRepository accountRepository;
+    private final PayeeRepository payeeRepository;
+
+    public TransactionSimulator(TransactionService transactionService, AccountRepository accountRepository,
+                                 PayeeRepository payeeRepository) {
+        this.transactionService = transactionService;
+        this.accountRepository = accountRepository;
+        this.payeeRepository = payeeRepository;
+    }
 
     @Value("${simulator.enabled:true}")
     private boolean enabledByDefault;
@@ -67,17 +80,11 @@ public class TransactionSimulator {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final Random random = new Random();
 
-    private static final List<String> ACCOUNT_POOL = List.of(
-            "ACC-001", "ACC-002", "ACC-003", "ACC-004", "ACC-005",
-            "ACC-006", "ACC-007", "ACC-008", "ACC-009", "ACC-010"
-    );
-
-    private static final List<String> PAYEE_POOL = List.of(
-            "PAY-001", "PAY-002", "PAY-003", "PAY-004", "PAY-005",
-            "PAY-006", "PAY-007", "PAY-008", "PAY-009", "PAY-010",
-            "PAY-011", "PAY-012", "PAY-013", "PAY-014", "PAY-015",
-            "PAY-016", "PAY-017", "PAY-018", "PAY-019", "PAY-020"
-    );
+    // Real account/payee IDs are seeded into the DB by SeedDataService - loaded
+    // lazily (on first tick) rather than at @PostConstruct, since bean
+    // initialization order between SeedDataService and this class isn't guaranteed.
+    private List<Integer> accountPool = List.of();
+    private List<Integer> payeePool = List.of();
 
     private static final List<String> DESCRIPTIONS = List.of(
             "Online purchase", "Wire transfer", "Bill payment", "Subscription charge",
@@ -94,6 +101,7 @@ public class TransactionSimulator {
     @Scheduled(fixedDelayString = "${simulator.interval-ms:3000}")
     public void generateTransaction() {
         if (!running.get()) return;
+        if (!refreshPoolsIfNeeded()) return; // no seeded accounts/payees yet
 
         if (random.nextDouble() < scenarioProbability) {
             int scenario = random.nextInt(3);
@@ -107,18 +115,30 @@ public class TransactionSimulator {
         }
     }
 
+    /** @return true if the pools are populated and ready to use. */
+    private boolean refreshPoolsIfNeeded() {
+        if (accountPool.isEmpty()) {
+            accountPool = new ArrayList<>(accountRepository.findAll().stream().map(com.example.entity.Account::getAccountId).toList());
+        }
+        if (payeePool.isEmpty()) {
+            payeePool = new ArrayList<>(payeeRepository.findAll().stream().map(Payee::getPayeeId).toList());
+        }
+        return !accountPool.isEmpty() && !payeePool.isEmpty();
+    }
+
     // ── Random baseline transaction ──────────────────────────────────────────
 
     private void generateRandomTransaction() {
-        TransactionRequest req = buildRandomRequest(randomFrom(ACCOUNT_POOL), randomFrom(PAYEE_POOL));
+        TransactionRequest req = buildRandomRequest(randomFrom(accountPool), randomFrom(payeePool));
         transactionService.createTransaction(req, TransactionSource.SIMULATOR);
     }
 
     // ── Demo scenarios ───────────────────────────────────────────────────────
 
     public void triggerVelocityScenario() {
-        String account = randomFrom(ACCOUNT_POOL);
-        String payee   = randomFrom(PAYEE_POOL);
+        if (!refreshPoolsIfNeeded()) return;
+        Integer account = randomFrom(accountPool);
+        Integer payee   = randomFrom(payeePool);
         log.info("Simulator: velocity scenario for account={}", account);
         for (int i = 0; i < 6; i++) {
             TransactionRequest req = new TransactionRequest();
@@ -133,12 +153,13 @@ public class TransactionSimulator {
     }
 
     public void triggerHighValueScenario() {
-        String account = randomFrom(ACCOUNT_POOL);
+        if (!refreshPoolsIfNeeded()) return;
+        Integer account = randomFrom(accountPool);
         BigDecimal amount = BigDecimal.valueOf(9000 + random.nextInt(5000));
         log.info("Simulator: high-value scenario for account={} amount={}", account, amount);
         TransactionRequest req = new TransactionRequest();
         req.setAccountId(account);
-        req.setPayeeId(randomFrom(PAYEE_POOL));
+        req.setPayeeId(randomFrom(payeePool));
         req.setAmount(amount);
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
@@ -147,12 +168,16 @@ public class TransactionSimulator {
     }
 
     public void triggerNewPayeeScenario() {
-        String account  = randomFrom(ACCOUNT_POOL);
-        String newPayee = "PAY-NEW-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
-        log.info("Simulator: new-payee scenario for account={} payee={}", account, newPayee);
+        if (!refreshPoolsIfNeeded()) return;
+        Integer account = randomFrom(accountPool);
+        Payee newPayee = new Payee();
+        newPayee.setPayeeName("Simulator-generated payee");
+        newPayee.setPayeeIdentifier("SIM-" + System.currentTimeMillis());
+        newPayee = payeeRepository.save(newPayee);
+        log.info("Simulator: new-payee scenario for account={} payee={}", account, newPayee.getPayeeId());
         TransactionRequest req = new TransactionRequest();
         req.setAccountId(account);
-        req.setPayeeId(newPayee);
+        req.setPayeeId(newPayee.getPayeeId());
         req.setAmount(BigDecimal.valueOf(100 + random.nextInt(500)));
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
@@ -178,7 +203,7 @@ public class TransactionSimulator {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private TransactionRequest buildRandomRequest(String accountId, String payeeId) {
+    private TransactionRequest buildRandomRequest(Integer accountId, Integer payeeId) {
         TransactionRequest req = new TransactionRequest();
         req.setAccountId(accountId);
         req.setPayeeId(payeeId);
@@ -203,3 +228,4 @@ public class TransactionSimulator {
         return list.get(random.nextInt(list.size()));
     }
 }
+

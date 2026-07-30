@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "Sentinel Fraud Detection API",
+    "_postman_id": "b6b3f0f0-1a2e-4c3a-9d5f-sentinel-collection",
+    "description": "End-to-end test suite for the spring-Sentinel fraud detection engine. Covers reference-data CRUD, risk-rule triggers (NEW_PAYEE, LOCATION_CHANGE, SPENDING_PATTERN, AMOUNT_ANOMALY, VELOCITY), case lifecycle, and validation edge cases.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "newCustomerId", "value": "" },
+    { "key": "newAccountId", "value": "" },
+    { "key": "newPayeeId", "value": "" },
+    { "key": "triggeredCaseId", "value": "" },
+    { "key": "triggeredAlertId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "A. Reference Data Sanity",
+      "item": [
+        {
+          "name": "A1 - GET All Customers",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/customers" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns at least 5 seeded customers', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.length).to.be.at.least(5);",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "A2 - GET All Accounts",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/accounts" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns at least 10 seeded accounts', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.length).to.be.at.least(10);",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "A3 - GET All Payees",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/payees" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns at least 20 seeded payees', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.length).to.be.at.least(20);",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "B. Baseline - No False Positives",
+      "item": [
+        {
+          "name": "B1 - First transaction to payee 15 (establishes history)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/transactions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 5,\n  \"payeeId\": 15,\n  \"amount\": 100.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Baseline setup\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('NEW_PAYEE triggered (first time)', () => {",
+            "  pm.expect(body.triggeredRules).to.include('NEW_PAYEE');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "B2 - Repeat transaction, same known payee, no location/category",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/transactions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 5,\n  \"payeeId\": 15,\n  \"amount\": 105.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Repeat known payee\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('No rules triggered - riskScore is 0', () => {",
+            "  pm.expect(body.triggeredRules.length).to.eql(0);",
+            "  pm.expect(body.riskScore).to.eql(0);",
+            "});",
+            "pm.test('No alert/case created', () => {",
+            "  pm.expect(body.alertId).to.be.null;",
+            "  pm.expect(body.caseId).to.be.null;",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "C. Multi-Rule Trigger (New Payee + Location + Category)",
+      "item": [
+        {
+          "name": "C1 - Unfamiliar payee/location/merchant category",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/transactions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 2,\n  \"payeeId\": 6,\n  \"amount\": 250.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Suspicious purchase\",\n  \"location\": \"Lagos, Nigeria\",\n  \"merchantCategory\": \"Electronics\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Triggers NEW_PAYEE, LOCATION_CHANGE, SPENDING_PATTERN', () => {",
+            "  pm.expect(body.triggeredRules).to.include.members(['NEW_PAYEE','LOCATION_CHANGE','SPENDING_PATTERN']);",
+            "});",
+            "pm.test('riskScore is above alert threshold (>=50)', () => {",
+            "  pm.expect(body.riskScore).to.be.at.least(50);",
+            "});",
+            "pm.test('Alert and Case were created', () => {",
+            "  pm.expect(body.alertId).to.not.be.null;",
+            "  pm.expect(body.caseId).to.not.be.null;",
+            "});",
+            "pm.collectionVariables.set('triggeredCaseId', body.caseId);",
+            "pm.collectionVariables.set('triggeredAlertId', body.alertId);"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "D. Amount Anomaly (Z-Score)",
+      "item": [
+        {
+          "name": "D1 - Small transaction #1 (build history)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 4,\n  \"payeeId\": 8,\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Regular coffee shop\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"] }}]
+        },
+        {
+          "name": "D2 - Small transaction #2 (build history)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 4,\n  \"payeeId\": 8,\n  \"amount\": 55.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Regular coffee shop\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"] }}]
+        },
+        {
+          "name": "D3 - Small transaction #3 (build history)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 4,\n  \"payeeId\": 8,\n  \"amount\": 48.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Regular coffee shop\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"] }}]
+        },
+        {
+          "name": "D4 - Outlier amount - should trigger AMOUNT_ANOMALY",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 4,\n  \"payeeId\": 8,\n  \"amount\": 4800.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Unusually large purchase\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('AMOUNT_ANOMALY triggered', () => {",
+            "  pm.expect(body.triggeredRules).to.include('AMOUNT_ANOMALY');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "E. Velocity (5 rapid transactions)",
+      "item": [
+        { "name": "E1", "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": { "mode": "raw", "raw": "{\n  \"accountId\": 6,\n  \"payeeId\": 9,\n  \"amount\": 20.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Velocity test 1\"\n}" } } },
+        { "name": "E2", "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": { "mode": "raw", "raw": "{\n  \"accountId\": 6,\n  \"payeeId\": 9,\n  \"amount\": 20.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Velocity test 2\"\n}" } } },
+        { "name": "E3", "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": { "mode": "raw", "raw": "{\n  \"accountId\": 6,\n  \"payeeId\": 9,\n  \"amount\": 20.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Velocity test 3\"\n}" } } },
+        { "name": "E4", "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": { "mode": "raw", "raw": "{\n  \"accountId\": 6,\n  \"payeeId\": 9,\n  \"amount\": 20.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Velocity test 4\"\n}" } } },
+        {
+          "name": "E5 - 5th transaction - should trigger VELOCITY",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 6,\n  \"payeeId\": 9,\n  \"amount\": 20.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"Velocity test 5\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('VELOCITY triggered', () => {",
+            "  pm.expect(body.triggeredRules).to.include('VELOCITY');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "F. Case Lifecycle",
+      "item": [
+        {
+          "name": "F1 - Acknowledge case (from Folder C)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/api/cases/{{triggeredCaseId}}/acknowledge" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Status is ACKNOWLEDGED', () => pm.expect(pm.response.json().status).to.eql('ACKNOWLEDGED'));"
+          ]}}]
+        },
+        {
+          "name": "F2 - Escalate case",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/api/cases/{{triggeredCaseId}}/escalate" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Status is ESCALATED', () => pm.expect(pm.response.json().status).to.eql('ESCALATED'));"
+          ]}}]
+        },
+        {
+          "name": "F3 - Close case with resolution notes",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/cases/{{triggeredCaseId}}/close",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"resolutionNotes\": \"Confirmed legitimate after contacting customer\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Status is CLOSED and closedAt is set', () => {",
+            "  pm.expect(body.status).to.eql('CLOSED');",
+            "  pm.expect(body.closedAt).to.not.be.null;",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "F4 - GET closed case to confirm persistence",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/cases/{{triggeredCaseId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('resolutionNotes persisted', () => {",
+            "  pm.expect(pm.response.json().resolutionNotes).to.include('Confirmed legitimate');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "G. Validation / Edge Cases",
+      "item": [
+        {
+          "name": "G1 - Nonexistent accountId (expect error)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/transactions", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": 99999,\n  \"payeeId\": 1,\n  \"amount\": 10.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Fails with server error (no global exception handler yet)', () => {",
+            "  pm.expect(pm.response.code).to.eql(500);",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "G2 - GET nonexistent account by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/accounts/99999" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));"
+          ]}}]
+        },
+        {
+          "name": "G3 - GET nonexistent case by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/cases/99999" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "H. Full CRUD Workflow (fresh entities)",
+      "item": [
+        {
+          "name": "H1 - Create Customer",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/customers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Ada\",\n  \"lastName\": \"Lovelace\",\n  \"email\": \"ada.lovelace@example.com\",\n  \"phone\": \"555-9001\",\n  \"address\": \"1 Analytical Engine Way\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('newCustomerId', body.customerId);"
+          ]}}]
+        },
+        {
+          "name": "H2 - Create Account for new customer",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/accounts",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": {{newCustomerId}},\n  \"accountNumber\": \"ACC-TEST-01\",\n  \"accountType\": \"CHECKING\",\n  \"currency\": \"USD\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('newAccountId', body.accountId);"
+          ]}}]
+        },
+        {
+          "name": "H3 - Create Payee",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/payees",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"payeeName\": \"Test Merchant Co\",\n  \"payeeIdentifier\": \"PAYEE-TEST-01\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('newPayeeId', body.payeeId);"
+          ]}}]
+        },
+        {
+          "name": "H4 - Transact using brand-new account/payee",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/transactions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": {{newAccountId}},\n  \"payeeId\": {{newPayeeId}},\n  \"amount\": 75.00,\n  \"currency\": \"USD\",\n  \"type\": \"DEBIT\",\n  \"description\": \"First payment from brand-new account\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('accountId/payeeId echoed correctly', () => {",
+            "  pm.expect(body.accountId).to.eql(pm.collectionVariables.get('newAccountId'));",
+            "  pm.expect(body.payeeId).to.eql(pm.collectionVariables.get('newPayeeId'));",
+            "});"
+          ]}}]
+        }
+      ]
+    }
+  ]
+}

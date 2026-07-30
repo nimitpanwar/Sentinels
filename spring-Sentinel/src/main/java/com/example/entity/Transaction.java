@@ -1,100 +1,134 @@
-/**
- * Transaction Entity - Maps to the 'transactions' table in MySQL.
- * 
- * PURPOSE: The database model that stores all transaction records with their details.
- * 
- * KEY FIELDS:
- *   - transactionId: Unique ID (auto-generated, e.g., TXN-A3F8C12D01)
- *   - accountId: Which account sent/received money
- *   - payeeId: The other party (who received or sent the money)
- *   - amount & currency: How much money and in what currency
- *   - type: DEBIT or CREDIT (direction of money)
- *   - timestamp: When the transaction happened (UTC time)
- *   - status: COMPLETED/PENDING/FAILED
- *   - source: API or SIMULATOR (where it came from)
- * 
- * INDEXES: Has 3 database indexes for fast queries:
- *   - (account_id, timestamp): Find transactions by account within a date range
- *   - (account_id, payee_id): Find transactions to a specific payee
- *   - timestamp: Find recent transactions quickly
- * 
- * AUTO-GENERATION: The @PrePersist method auto-creates transactionId and timestamp
- *                  before saving to database.
- */
 package com.example.entity;
 
-import com.example.enums.TransactionSource;
 import com.example.enums.TransactionStatus;
 import com.example.enums.TransactionType;
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
+/**
+ * JPA entity for the real 'transactions' table (final relational schema
+ * provided by the user - see customers/accounts/payees/transactions/...).
+ * No Lombok - it silently fails to generate methods on this JDK (JDK 25),
+ * so everything below is written out explicitly.
+ */
 @Entity
 @Table(
     name = "transactions",
     indexes = {
-        @Index(name = "idx_account_timestamp", columnList = "account_id, timestamp"),
-        @Index(name = "idx_account_payee",     columnList = "account_id, payee_id"),
-        @Index(name = "idx_timestamp",          columnList = "timestamp")
+        @Index(name = "idx_txn_account_timestamp", columnList = "account_id, transaction_timestamp"),
+        @Index(name = "idx_txn_payee", columnList = "payee_id")
     }
 )
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "transaction_id")
+    private Integer transactionId;
 
-    @Column(name = "transaction_id", unique = true, nullable = false, length = 36)
-    private String transactionId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
-    @Column(name = "account_id", nullable = false, length = 50)
-    private String accountId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payee_id", nullable = false)
+    private Payee payee;
 
-    @Column(name = "payee_id", nullable = false, length = 50)
-    private String payeeId;
-
-    @Column(nullable = false, precision = 19, scale = 4)
+    @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(length = 3, nullable = false)
-    private String currency;
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private TransactionType type;
 
-    @Column(nullable = false)
-    private Instant timestamp;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private TransactionStatus status;
+    private TransactionStatus status = TransactionStatus.PENDING;
 
     @Column(length = 255)
     private String description;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "merchant_category", length = 100)
+    private String merchantCategory;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private TransactionSource source;
+    @Column(length = 150)
+    private String location;
+
+    @Column(name = "transaction_timestamp", nullable = false)
+    private LocalDateTime transactionTimestamp;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    public Transaction() {
+    }
 
     @PrePersist
-    public void prePersist() {//Generates a transaction_id and timestamp if already doesnt exist.
+    public void prePersist() {
         if (createdAt == null) {
-            createdAt = Instant.now();
+            createdAt = LocalDateTime.now();
         }
-        if (transactionId == null) {
-            transactionId = "TXN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+        if (transactionTimestamp == null) {
+            transactionTimestamp = LocalDateTime.now();
         }
+    }
+
+    public Integer getTransactionId() { return transactionId; }
+    public void setTransactionId(Integer transactionId) { this.transactionId = transactionId; }
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
+    public Payee getPayee() { return payee; }
+    public void setPayee(Payee payee) { this.payee = payee; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
+    public TransactionType getType() { return type; }
+    public void setType(TransactionType type) { this.type = type; }
+    public TransactionStatus getStatus() { return status; }
+    public void setStatus(TransactionStatus status) { this.status = status; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getMerchantCategory() { return merchantCategory; }
+    public void setMerchantCategory(String merchantCategory) { this.merchantCategory = merchantCategory; }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+    public LocalDateTime getTransactionTimestamp() { return transactionTimestamp; }
+    public void setTransactionTimestamp(LocalDateTime transactionTimestamp) { this.transactionTimestamp = transactionTimestamp; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    /** Convenience accessor - avoids null checks scattered across rule code. */
+    public Integer getAccountId() { return account != null ? account.getAccountId() : null; }
+
+    /** Convenience accessor - avoids null checks scattered across rule code. */
+    public Integer getPayeeId() { return payee != null ? payee.getPayeeId() : null; }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Hand-written stand-in for Lombok's @Builder (see class-level note). */
+    public static class Builder {
+        private final Transaction tx = new Transaction();
+
+        public Builder account(Account account) { tx.account = account; return this; }
+        public Builder payee(Payee payee) { tx.payee = payee; return this; }
+        public Builder amount(BigDecimal amount) { tx.amount = amount; return this; }
+        public Builder currency(String currency) { tx.currency = currency; return this; }
+        public Builder type(TransactionType type) { tx.type = type; return this; }
+        public Builder status(TransactionStatus status) { tx.status = status; return this; }
+        public Builder description(String description) { tx.description = description; return this; }
+        public Builder merchantCategory(String merchantCategory) { tx.merchantCategory = merchantCategory; return this; }
+        public Builder location(String location) { tx.location = location; return this; }
+        public Builder transactionTimestamp(LocalDateTime transactionTimestamp) { tx.transactionTimestamp = transactionTimestamp; return this; }
+        public Builder createdAt(LocalDateTime createdAt) { tx.createdAt = createdAt; return this; }
+
+        public Transaction build() { return tx; }
     }
 }

@@ -29,18 +29,21 @@
 package com.example.controller;
 
 import com.example.service.TransactionSimulator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+// NOTE: Lombok (@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
 @RestController
 @RequestMapping("/api/simulator")
-@RequiredArgsConstructor
 public class SimulatorController {
 
     private final TransactionSimulator simulator;
+
+    public SimulatorController(TransactionSimulator simulator) {
+        this.simulator = simulator;
+    }
 
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> start() {
