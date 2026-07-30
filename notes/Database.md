@@ -58,7 +58,15 @@ rule_type - ENUM (AMOUNT_ANOMALY/VELOCITY/NEW_PAYEE/TIME_ANOMALY/DEVICE_CHANGE/L
 is_active - BOOLEAN  
 weight - DECIMAL 
 
-
+alerts
+alert_id - PK
+transaction_id - FK -> transactions.transaction_id   
+risk_score - DECIMAL
+severity - ENUM (HIGH/MID/LOW)
+status - ENUM (OPEN/IN_REVIEW/ESCALATED/CLOSED)
+created_at - TIMESTAMP
+closed_at - TIMESTAMP
+resolution_notes - TEXT
 
 cases 
 case_id - PK 
