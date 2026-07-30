@@ -30,19 +30,22 @@ import com.example.dto.TransactionRequest;
 import com.example.dto.TransactionResponse;
 import com.example.enums.TransactionSource;
 import com.example.service.TransactionService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// NOTE: Lombok (@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
 @RestController
 @RequestMapping("/api/transactions")
-@RequiredArgsConstructor
 public class TransactionController {
 
     private final TransactionService transactionService;
+
+    public TransactionController(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
 
     @PostMapping
     public ResponseEntity<TransactionResponse> create(@RequestBody TransactionRequest request) {
@@ -56,7 +59,7 @@ public class TransactionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TransactionResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<TransactionResponse> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(transactionService.getTransactionById(id));
     }
 }
