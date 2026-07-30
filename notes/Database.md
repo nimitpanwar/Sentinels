@@ -77,3 +77,14 @@ created_at - TIMESTAMP
 closed_at - TIMESTAMP 
 resolution_notes - TEXT
 
+
+
+
+TO BE APPENDED
+
+alerts -> case_id
+cases -> account_id
+rule_evaluations -> reason
+rules -> threshold_value
+rules -> timeline
+
