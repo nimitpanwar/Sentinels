@@ -1,3 +1,31 @@
+/**
+ * SimulatorController
+ * 
+ * PURPOSE: REST API endpoints for controlling and triggering the transaction
+ *          simulator. Used for testing, demoing, and triggering specific
+ *          rule-tripping scenarios on demand.
+ * 
+ * ENDPOINTS:
+ *   - POST /api/simulator/start: Turn on automatic transaction generation
+ *     Response: {"running": true}
+ *   
+ *   - POST /api/simulator/stop: Turn off automatic transaction generation
+ *     Response: {"running": false}
+ *   
+ *   - GET /api/simulator/status: Check if simulator is currently running
+ *     Response: {"running": true/false}
+ *   
+ *   - POST /api/simulator/trigger/{scenario}: Manually fire a specific scenario
+ *     Scenarios: velocity, high-value, new-payee
+ *     Example: POST /api/simulator/trigger/velocity
+ *     Response: Scenario name and details
+ * 
+ * USE CASES:
+ *   - Start/stop the simulator to control data generation
+ *   - Trigger specific scenarios to test how alerts are created
+ *   - Pause to inspect database state without new data interfering
+ *   - On-demand scenario generation for demo purposes
+ */
 package com.example.controller;
 
 import com.example.service.TransactionSimulator;

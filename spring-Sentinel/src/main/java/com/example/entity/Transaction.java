@@ -1,3 +1,26 @@
+/**
+ * Transaction Entity - Maps to the 'transactions' table in MySQL.
+ * 
+ * PURPOSE: The database model that stores all transaction records with their details.
+ * 
+ * KEY FIELDS:
+ *   - transactionId: Unique ID (auto-generated, e.g., TXN-A3F8C12D01)
+ *   - accountId: Which account sent/received money
+ *   - payeeId: The other party (who received or sent the money)
+ *   - amount & currency: How much money and in what currency
+ *   - type: DEBIT or CREDIT (direction of money)
+ *   - timestamp: When the transaction happened (UTC time)
+ *   - status: COMPLETED/PENDING/FAILED
+ *   - source: API or SIMULATOR (where it came from)
+ * 
+ * INDEXES: Has 3 database indexes for fast queries:
+ *   - (account_id, timestamp): Find transactions by account within a date range
+ *   - (account_id, payee_id): Find transactions to a specific payee
+ *   - timestamp: Find recent transactions quickly
+ * 
+ * AUTO-GENERATION: The @PrePersist method auto-creates transactionId and timestamp
+ *                  before saving to database.
+ */
 package com.example.entity;
 
 import com.example.enums.TransactionSource;
