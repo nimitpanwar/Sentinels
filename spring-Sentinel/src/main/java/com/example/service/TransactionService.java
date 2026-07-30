@@ -1,3 +1,27 @@
+/**
+ * TransactionService
+ * 
+ * PURPOSE: The central service for all transaction operations. Handles creating,
+ *          retrieving, and publishing transactions. This is the main business logic
+ *          class that connects the API to the database and event system.
+ * 
+ * KEY METHODS:
+ *   - createTransaction(request, source): Creates a new transaction, saves it to DB,
+ *     fires an event, and returns the saved transaction to the caller.
+ *   - getAllTransactions(): Fetches all transactions from the database.
+ *   - getTransactionById(id): Fetches a single transaction by ID.
+ * 
+ * IMPORTANT: Both the API controller AND the simulator use this same method.
+ *            They only differ in the 'source' parameter (API vs SIMULATOR).
+ *            This ensures consistent handling regardless of where transactions come from.
+ * 
+ * EVENT PUBLISHING: After every save, it publishes TransactionCreatedEvent.
+ *                   This triggers the event listener on a background thread
+ *                   (which will eventually evaluate rules).
+ * 
+ * DATABASE ACCESS: Only talks to the database through TransactionRepository.
+ *                  Never writes SQL directly.
+ */
 package com.example.service;
 
 import com.example.dto.TransactionRequest;

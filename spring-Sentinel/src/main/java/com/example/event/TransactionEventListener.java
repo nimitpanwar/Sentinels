@@ -1,3 +1,27 @@
+/**
+ * TransactionEventListener
+ * 
+ * PURPOSE: Listens for TransactionCreatedEvent on a background thread and
+ *          currently writes transaction details to a log file. Later, this
+ *          will be replaced with Rule Engine evaluation logic.
+ * 
+ * HOW IT WORKS:
+ *   - Marked with @Async to run on a separate thread pool (non-blocking)
+ *   - When TransactionCreatedEvent is published, this method is triggered
+ *   - Currently logs transaction to 'transactions_log.txt' for visibility
+ * 
+ * TEMPORARY BEHAVIOR:
+ *   The code between the TEMP markers will be replaced when the Rule Engine
+ *   is ready. The entire writeTransactionToFile() method will be removed.
+ * 
+ * FUTURE BEHAVIOR:
+ *   - Will call ruleEngineService.evaluate(transaction)
+ *   - Rule Engine will check all rules and create alerts if any rules trigger
+ * 
+ * KEY INSIGHT: This is where rule evaluation happens, completely separate
+ *              from transaction creation. By the time this runs, the transaction
+ *              is already safely stored in the database.
+ */
 package com.example.event;
 
 import com.example.entity.Transaction;

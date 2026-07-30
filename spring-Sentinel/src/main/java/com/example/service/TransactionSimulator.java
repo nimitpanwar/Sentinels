@@ -1,3 +1,37 @@
+/**
+ * TransactionSimulator
+ * 
+ * PURPOSE: A background data generator that creates fake transactions automatically
+ *          on a schedule. This is used for testing, demoing, and generating datasets
+ *          for the Rule Engine to evaluate.
+ * 
+ * HOW IT WORKS:
+ *   - Runs on a @Scheduled timer (every 3 seconds, configurable)
+ *   - Each tick either generates a random transaction OR triggers a scenario
+ *   - 10% of the time (configurable), it triggers a special scenario instead
+ *   - All transactions go through TransactionService (same path as API)
+ * 
+ * SCENARIO TYPES (triggered 10% of the time):
+ *   1. VELOCITY: Creates 6 rapid transactions from the same account to same payee
+ *      (designed to trigger the Velocity rule)
+ *   2. HIGH-VALUE: Creates a single large transaction ($9k–$14k)
+ *      (designed to trigger the High-Value rule)
+ *   3. NEW-PAYEE: Creates a transaction to a payee ID never seen before
+ *      (designed to trigger the New-Payee rule)
+ * 
+ * RANDOM BASELINE (90% of the time):
+ *   - Picks random account, payee, amount, type, description
+ *   - Amount distribution: 70% small ($5–$500), 25% medium ($500–$2k), 5% large ($2k–$8k)
+ *   - Type: Random DEBIT or CREDIT
+ * 
+ * CONTROL: Can be started/stopped via SimulatorController endpoints.
+ *          Check if running via isRunning() method.
+ * 
+ * CONFIGURATION: All settings come from application.properties:
+ *   - simulator.enabled: Start on app boot?
+ *   - simulator.interval-ms: How often to generate
+ *   - simulator.scenario-probability: % chance of scenario vs random
+ */
 package com.example.service;
 
 import com.example.dto.TransactionRequest;
