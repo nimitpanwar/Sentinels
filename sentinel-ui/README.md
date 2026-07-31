@@ -14,3 +14,19 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the Oxlint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+
+## CI (GitHub Actions)
+
+This repository includes a CI workflow at `.github/workflows/ci.yml`.
+
+On each push and pull request, GitHub Actions runs:
+
+- Backend tests in `spring-Sentinel` with Java 21 and a MySQL service container.
+- Frontend checks in `sentinel-ui`:
+	- `npm ci`
+	- `npm run lint`
+	- `npm run build`
+
+Current scope:
+
+- Frontend unit tests are not configured yet. CI validates lint and build only.
