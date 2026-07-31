@@ -11,6 +11,8 @@ import com.example.riskengine.model.RiskResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,7 +51,14 @@ public class AlertManager {
 
     /**
      * @return the created Alert, or empty if the risk score did not warrant one.
+     *
+     * READ_COMMITTED: paired with the PESSIMISTIC_WRITE lock in
+     * findOrCreateCase, this serializes concurrent evaluations for the same
+     * account around the case lookup/create-or-merge step, and avoids the
+     * wider gap-locking that MySQL's default REPEATABLE_READ would take for
+     * a locked range scan under concurrent inserts (higher deadlock risk).
      */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<Alert> process(RiskResult riskResult, Transaction transaction) {
         // Step 1: Check alert threshold.
         if (riskResult.getRiskScore() < alertConfig.getMinScoreToCreateAlert()) {
@@ -77,7 +86,10 @@ public class AlertManager {
     }
 
     private Case findOrCreateCase(Transaction transaction, RiskResult riskResult) {
-        List<Case> candidates = caseRepository.findByAccountAccountIdAndStatusNotOrderByCreatedAtDesc(
+        // Pessimistic write lock: held until this transaction commits, so a
+        // second concurrent evaluation for the same account blocks here
+        // instead of also seeing "no open case" and creating a duplicate one.
+        List<Case> candidates = caseRepository.findByAccountForUpdate(
                 transaction.getAccountId(), CaseStatus.CLOSED);
 
         Optional<Case> existing = candidates.stream()
@@ -121,14 +133,17 @@ public class AlertManager {
 
     // ---- Case lifecycle actions (used by CaseController) ----
 
+    @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
         return updateCaseStatus(caseId, CaseStatus.IN_REVIEW, null);
     }
 
+    @Transactional
     public Optional<Case> escalate(Integer caseId) {
         return updateCaseStatus(caseId, CaseStatus.ESCALATED, null);
     }
 
+    @Transactional
     public Optional<Case> close(Integer caseId, String resolutionNotes) {
         return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes);
     }

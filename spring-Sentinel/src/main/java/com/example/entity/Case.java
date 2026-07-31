@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
  * window are grouped under one open Case (see AlertManager).
  */
 @Entity
-@Table(name = "cases")
+@Table(
+    name = "cases",
+    indexes = {
+        @Index(name = "idx_case_account_status", columnList = "account_id, status")
+    }
+)
 public class Case {
 
     @Id
@@ -24,6 +29,15 @@ public class Case {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
+
+    // Optimistic lock: guards against lost updates when two lifecycle
+    // actions (acknowledge/escalate/close) race on the same case (see
+    // Appendix E "Concurrent Operations" test scenario) - the losing save
+    // throws ObjectOptimisticLockingFailureException instead of silently
+    // overwriting the other operator's change.
+    @Version
+    @Column(nullable = false)
+    private long version;
 
     @Column(name = "risk_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal riskScore;
@@ -59,6 +73,8 @@ public class Case {
     public void setCaseId(Integer caseId) { this.caseId = caseId; }
     public Account getAccount() { return account; }
     public void setAccount(Account account) { this.account = account; }
+    public long getVersion() { return version; }
+    public void setVersion(long version) { this.version = version; }
     public BigDecimal getRiskScore() { return riskScore; }
     public void setRiskScore(BigDecimal riskScore) { this.riskScore = riskScore; }
     public Severity getSeverity() { return severity; }

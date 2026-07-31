@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface AlertRepository extends JpaRepository<Alert, Integer> {
 
     Optional<Alert> findFirstByACaseCaseIdOrderByCreatedAtDesc(Integer caseId);
+
+    Optional<Alert> findByTransactionTransactionId(Integer transactionId);
 }

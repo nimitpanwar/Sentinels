@@ -3,6 +3,7 @@ package com.example.riskengine.service;
 import com.example.entity.Transaction;
 import com.example.repository.TransactionRepository;
 import com.example.riskengine.model.HistoricalProfile;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,10 +34,25 @@ public class HistoricalProfileService {
      * Builds the historical profile for the account behind {@code current},
      * excluding {@code current} itself (it has already been saved to the DB
      * by the time evaluation runs, and must not bias its own baseline).
+     *
+     * Bounded to the last {@link #DEFAULT_LOOKBACK_DAYS} days (previously this
+     * fetched EVERY transaction the account ever made, unbounded - a growing
+     * perf problem as history accumulates, and inconsistent with the lookback
+     * this class already claimed to use).
+     *
+     * Cached per account for a short TTL (see CacheConfig) - this baseline is
+     * a slow-moving statistical aggregate, not a hard threshold, so a few
+     * seconds of staleness under a burst of transactions for the same account
+     * is an acceptable trade-off for not re-scanning up to 90 days of rows on
+     * every single evaluation.
      */
+    @Cacheable(value = "historicalProfile", key = "#current.accountId")
     public HistoricalProfile getProfile(Transaction current) {
+        LocalDateTime windowEnd = current.getTransactionTimestamp() != null ? current.getTransactionTimestamp() : LocalDateTime.now();
+        LocalDateTime windowStart = windowEnd.minusDays(DEFAULT_LOOKBACK_DAYS);
+
         List<Transaction> history = transactionRepository
-                .findByAccountAccountIdOrderByTransactionTimestampDesc(current.getAccountId())
+                .findByAccountAccountIdAndTransactionTimestampBetween(current.getAccountId(), windowStart, windowEnd)
                 .stream()
                 .filter(t -> !t.getTransactionId().equals(current.getTransactionId()))
                 .toList();
@@ -83,10 +99,14 @@ public class HistoricalProfileService {
         );
     }
 
-    /** Count of this account's transactions within the last {@code windowDays} days. */
-    public int getRecentTransactionCount(Integer accountId, LocalDateTime now, int windowDays) {
+    /**
+     * Count of this account's transactions within the last {@code windowDays}
+     * days. Deliberately NOT cached (unlike getProfile) - this is a live
+     * threshold-style count, always computed via SQL COUNT(*), never stale.
+     */
+    public long getRecentTransactionCount(Integer accountId, LocalDateTime now, int windowDays) {
         LocalDateTime from = now.minusDays(windowDays);
-        return transactionRepository.findByAccountAccountIdAndTransactionTimestampBetween(accountId, from, now).size();
+        return transactionRepository.countByAccountAccountIdAndTransactionTimestampBetween(accountId, from, now);
     }
 
     private HistoricalProfile coldStartProfile(Integer accountId) {

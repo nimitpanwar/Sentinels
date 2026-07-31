@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
  * with other recent alerts for the same account.
  */
 @Entity
-@Table(name = "alerts")
+@Table(
+    name = "alerts",
+    indexes = {
+        @Index(name = "idx_alert_case_created", columnList = "case_id, created_at")
+    }
+)
 public class Alert {
 
     @Id

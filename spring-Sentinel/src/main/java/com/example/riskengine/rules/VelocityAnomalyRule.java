@@ -35,9 +35,12 @@ public class VelocityAnomalyRule implements RiskRule {
     public RuleResult evaluate(Transaction transaction, HistoricalProfile profile, Rule rule) {
         LocalDateTime now = transaction.getTransactionTimestamp();
         LocalDateTime from = now.minusDays(Math.max(1, rule.getTimeline()));
-        int count = transactionRepository
-                .findByAccountAccountIdAndTransactionTimestampBetween(transaction.getAccountId(), from, now)
-                .size();
+        // COUNT query, not a fetch-then-size(): avoids loading full Transaction
+        // rows (with their EAGER account/payee joins) just to count them - this
+        // runs on every single evaluation, so it needs to stay a lightweight SQL
+        // COUNT(*), never a cache (velocity must always reflect the true count).
+        long count = transactionRepository
+                .countByAccountAccountIdAndTransactionTimestampBetween(transaction.getAccountId(), from, now);
 
         int threshold = rule.getThresholdValue().intValue();
 
