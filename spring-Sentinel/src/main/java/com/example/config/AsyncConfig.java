@@ -43,8 +43,8 @@ public class AsyncConfig {
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4);
-        executor.setMaxPoolSize(10);
+        executor.setCorePoolSize(6);
+        executor.setMaxPoolSize(16);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("sentinel-async-");
         executor.initialize();

@@ -11,7 +11,12 @@ import java.time.LocalDateTime;
  * triggered), so the full evaluation history is inspectable later.
  */
 @Entity
-@Table(name = "rule_evaluations")
+@Table(
+    name = "rule_evaluations",
+    indexes = {
+        @Index(name = "idx_ruleeval_transaction", columnList = "transaction_id")
+    }
+)
 public class RuleEvaluation {
 
     @Id

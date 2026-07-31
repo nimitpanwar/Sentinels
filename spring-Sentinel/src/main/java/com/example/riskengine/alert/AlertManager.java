@@ -57,6 +57,15 @@ public class AlertManager {
      * account around the case lookup/create-or-merge step, and avoids the
      * wider gap-locking that MySQL's default REPEATABLE_READ would take for
      * a locked range scan under concurrent inserts (higher deadlock risk).
+     *
+     * NOTE: an in-JVM ReentrantLock replacement was tried here and reverted -
+     * releasing a Java lock inside this method body happens BEFORE Spring's
+     * @Transactional proxy actually commits (commit happens in the proxy,
+     * after this method returns), so a second thread could acquire the JVM
+     * lock and read stale (not-yet-committed) case state. Confirmed via a
+     * live test: two concurrent evaluations for the same account both saw
+     * "no open case" and created duplicate cases 31ms apart. A DB row lock
+     * doesn't have this gap since it's held until the actual commit.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<Alert> process(RiskResult riskResult, Transaction transaction) {
@@ -101,6 +110,7 @@ public class AlertManager {
             int mergedScore = Math.max(aCase.getRiskScore().intValue(), riskResult.getRiskScore());
             aCase.setRiskScore(toScoreDecimal(mergedScore));
             aCase.setSeverity(alertConfig.severityFor(mergedScore));
+            aCase.setLastAlertAt(riskResult.getTransactionTimestamp());
             caseRepository.save(aCase);
             log.info("Merged transaction {} into existing case {} (new score={})",
                     riskResult.getTransactionId(), aCase.getCaseId(), mergedScore);
@@ -112,6 +122,7 @@ public class AlertManager {
         aCase.setRiskScore(toScoreDecimal(riskResult.getRiskScore()));
         aCase.setSeverity(alertConfig.severityFor(riskResult.getRiskScore()));
         aCase.setStatus(CaseStatus.OPEN);
+        aCase.setLastAlertAt(riskResult.getTransactionTimestamp());
         aCase = caseRepository.save(aCase);
         log.info("Created new case {} for account {} (score={})",
                 aCase.getCaseId(), transaction.getAccountId(), riskResult.getRiskScore());
@@ -120,9 +131,7 @@ public class AlertManager {
 
     /** Merge cooldown is measured from the case's most recent alert (or its creation time if it has none yet). */
     private boolean isWithinMergeWindow(Case aCase, RiskResult riskResult) {
-        LocalDateTime referenceTime = alertRepository.findFirstByACaseCaseIdOrderByCreatedAtDesc(aCase.getCaseId())
-                .map(Alert::getCreatedAt)
-                .orElse(aCase.getCreatedAt());
+        LocalDateTime referenceTime = aCase.getLastAlertAt() != null ? aCase.getLastAlertAt() : aCase.getCreatedAt();
         long minutesSince = ChronoUnit.MINUTES.between(referenceTime, riskResult.getTransactionTimestamp());
         return minutesSince <= alertConfig.getMergeCooldownMinutes();
     }
