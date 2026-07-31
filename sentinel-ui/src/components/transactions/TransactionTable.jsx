@@ -28,7 +28,6 @@ export default function TransactionTable({ rows }) {
             <th className="th th--num">Amount</th>
             <th className="th">Type</th>
             <th className="th">Status</th>
-            <th className="th th--num">Risk</th>
           </tr>
         </thead>
         <tbody>

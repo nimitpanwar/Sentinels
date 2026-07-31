@@ -89,11 +89,6 @@ export default function TransactionRow({ tx }) {
         </td>
         <td className="tx-cell"><Badge value={tx.type} /></td>
         <td className="tx-cell"><Badge value={tx.status} /></td>
-        <td className="tx-cell num">
-          {tx.riskScore != null
-            ? <span className="risk-score" data-score={tx.riskScore}>{tx.riskScore}</span>
-            : <span className="muted">—</span>}
-        </td>
       </tr>
 
       {open && <TransactionDetailModal tx={tx} onClose={() => setOpen(false)} />}

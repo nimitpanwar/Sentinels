@@ -121,6 +121,31 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
 
+.filter-toggle--active {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.filter-toggle--active:hover {
+  background: #dbeafe;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .filter-icon-svg {
   width: 16px;
   height: 16px;
@@ -207,16 +232,6 @@
   padding: 16px 20px;
   overflow-y: auto;
   flex: 1;
-}
-
-.filter-coming-soon-banner {
-  background: #fef9c3;
-  color: #713f12;
-  border: 1px solid #fde68a;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 0.78rem;
-  margin-bottom: 16px;
 }
 
 .filter-section-title {

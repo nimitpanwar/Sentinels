@@ -15,8 +15,9 @@
  *   loading     — true while any fetch is in flight
  *   error       — non-null string if a fetch failed
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchTransactions } from '../../api/transactionsApi';
+import { filterRows, countActiveFilters, EMPTY_FILTERS } from '../../utils/filterUtils';
 import FilterBar from './FilterBar';
 import TransactionTable from './TransactionTable';
 import './transactions.css';
@@ -26,10 +27,15 @@ const MORE_SIZE    = 50;   // rows per "Show More" request
 
 export default function TransactionsPage() {
   const [rows, setRows]         = useState([]);
-  const [nextPage, setNextPage] = useState(2);  // pages 0+1 are fetched on mount
+  const [nextPage, setNextPage] = useState(2);
   const [hasMore, setHasMore]   = useState(true);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [filters, setFilters]   = useState(EMPTY_FILTERS);
+
+  // Derive filtered rows from the full loaded set — no fetch needed
+  const filteredRows   = useMemo(() => filterRows(rows, filters), [rows, filters]);
+  const activeFilters  = countActiveFilters(filters);
 
   // Initial load: fetch pages 0 and 1 in parallel → 100 rows
   useEffect(() => {
@@ -88,11 +94,15 @@ export default function TransactionsPage() {
       <div className="page-header">
         <h1 className="page-title">Transactions</h1>
         {!loading && !error && (
-          <span className="row-count">{rows.length.toLocaleString()} loaded</span>
+          <span className="row-count">
+            {activeFilters > 0
+              ? <>{filteredRows.length.toLocaleString()} of {rows.length.toLocaleString()} loaded</>
+              : <>{rows.length.toLocaleString()} loaded</>}
+          </span>
         )}
       </div>
 
-      <FilterBar />
+      <FilterBar filters={filters} onFiltersChange={setFilters} />
 
       {error && (
         <div className="error-banner">
@@ -102,7 +112,7 @@ export default function TransactionsPage() {
 
       {loading && rows.length === 0
         ? <div className="loading-state">Loading transactions…</div>
-        : <TransactionTable rows={rows} />}
+        : <TransactionTable rows={filteredRows} />}
 
       {/* Show More / loading spinner / end-of-list */}
       <div className="pagination-bar">
@@ -115,7 +125,11 @@ export default function TransactionsPage() {
           </button>
         )}
         {!loading && !hasMore && rows.length > 0 && (
-          <span className="end-of-list">All {rows.length.toLocaleString()} transactions loaded</span>
+          <span className="end-of-list">
+            {activeFilters > 0
+              ? `${filteredRows.length.toLocaleString()} matches — all ${rows.length.toLocaleString()} transactions searched`
+              : `All ${rows.length.toLocaleString()} transactions loaded`}
+          </span>
         )}
       </div>
     </div>
