@@ -92,17 +92,6 @@ public class TransactionSimulator {
             "Utility payment", "Insurance premium"
     );
 
-    private static final List<String> MERCHANT_CATEGORIES = List.of(
-            "Groceries", "Restaurant", "Gas Station", "Electronics", "Clothing",
-            "Healthcare", "Travel", "Entertainment", "Home Improvement", "Online Retail"
-    );
-
-    private static final List<String> LOCATIONS = List.of(
-            "New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX",
-            "Phoenix, AZ", "Philadelphia, PA", "San Antonio, TX", "San Diego, CA",
-            "Dallas, TX", "San Jose, CA"
-    );
-
     @PostConstruct
     public void init() {
         running.set(enabledByDefault);
@@ -159,8 +148,6 @@ public class TransactionSimulator {
             req.setCurrency("USD");
             req.setType(TransactionType.DEBIT);
             req.setDescription("Velocity test tx-" + (i + 1));
-            req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-            req.setLocation(randomFrom(LOCATIONS));
             transactionService.createTransaction(req, TransactionSource.SIMULATOR);
         }
     }
@@ -177,8 +164,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
         req.setDescription("High-value transfer");
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
         transactionService.createTransaction(req, TransactionSource.SIMULATOR);
     }
 
@@ -197,8 +182,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
         req.setDescription("First-time payee transaction");
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
         transactionService.createTransaction(req, TransactionSource.SIMULATOR);
     }
 
@@ -227,8 +210,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(random.nextBoolean() ? TransactionType.DEBIT : TransactionType.CREDIT);
         req.setDescription(randomFrom(DESCRIPTIONS));
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
 
         // Weighted distribution: 70% small, 25% medium, 5% large
         double roll = random.nextDouble();

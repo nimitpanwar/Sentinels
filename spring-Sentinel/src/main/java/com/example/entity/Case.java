@@ -59,6 +59,14 @@ public class Case {
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
+    // Denormalized copy of this case's most recent alert's createdAt, kept in
+    // sync by AlertManager on every merge/create. Lets isWithinMergeWindow()
+    // do a plain in-memory comparison instead of a separate DB query per
+    // candidate case - safe because it's written in the SAME transaction/
+    // commit as the rest of the case row (no atomicity gap introduced).
+    @Column(name = "last_alert_at")
+    private LocalDateTime lastAlertAt;
+
     public Case() {
     }
 
@@ -87,4 +95,6 @@ public class Case {
     public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+    public LocalDateTime getLastAlertAt() { return lastAlertAt; }
+    public void setLastAlertAt(LocalDateTime lastAlertAt) { this.lastAlertAt = lastAlertAt; }
 }

@@ -1,0 +1,7 @@
+Fix the coupling bug first — make event publishing not block/fail the transaction save (e.g., use TransactionalEventListener(phase = AFTER_COMMIT) instead of a plain @EventListener, and set a sane rejection policy like CallerRunsPolicy instead of the default abort).
+Replace in-process events with a real message queue (RabbitMQ/Kafka) for durability and horizontal scaling — in-process ApplicationEventPublisher events are lost if the app crashes and can't be processed by a second instance.
+Tune/scale the DB connection pool (spring.datasource.hikari.maximum-pool-size) and verify MySQL's own max_connections and hardware can support it.
+Cache or incrementally maintain profile aggregates (e.g., a rolling mean/stddev/known-set updated on each new transaction, or Redis-cached) instead of recomputing per request.
+Batch the rule_evaluations inserts (one batch insert of 6 rows instead of 6 individual inserts).
+Scale horizontally — multiple app instances behind a load balancer, consuming from the shared queue.
+Actually load test it (JMeter/k6/Gatling) — everything above is estimation from reading the code, not a measured benchmark. Real numbers depend on hardware, network, and MySQL configuration I have no visibility into.

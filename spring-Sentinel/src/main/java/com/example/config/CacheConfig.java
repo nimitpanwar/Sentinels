@@ -54,8 +54,21 @@ public class CacheConfig {
                         .expireAfterWrite(60, TimeUnit.SECONDS)
                         .build());
 
+        // Reference data looked up on every transaction creation - changes
+        // rarely (new account/payee onboarding), so a longer TTL is safe.
+        CaffeineCache accounts = new CaffeineCache("accounts",
+                Caffeine.newBuilder()
+                        .maximumSize(10_000)
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .build());
+        CaffeineCache payees = new CaffeineCache("payees",
+                Caffeine.newBuilder()
+                        .maximumSize(10_000)
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .build());
+
         SimpleCacheManager manager = new SimpleCacheManager();
-        manager.setCaches(List.of(historicalProfile, activeRules));
+        manager.setCaches(List.of(historicalProfile, activeRules, accounts, payees));
         return manager;
     }
 }
