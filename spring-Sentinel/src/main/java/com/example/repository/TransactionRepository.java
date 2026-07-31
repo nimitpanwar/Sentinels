@@ -20,6 +20,8 @@
 package com.example.repository;
 
 import com.example.entity.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -37,5 +39,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     List<Transaction> findByAccountAccountIdAndPayeePayeeId(Integer accountId, Integer payeeId);
 
     List<Transaction> findByAccountAccountIdOrderByTransactionTimestampDesc(Integer accountId);
+
+    /** Paginated fetch of all transactions, newest first — used by the transactions UI page. */
+    Page<Transaction> findAllByOrderByTransactionTimestampDesc(Pageable pageable);
 }
 
