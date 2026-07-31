@@ -1,55 +1,62 @@
 /**
  * TransactionEventListener
  * 
- * PURPOSE: Listens for TransactionCreatedEvent on a background thread and
- *          currently writes transaction details to a log file. Later, this
- *          will be replaced with Rule Engine evaluation logic.
+ * PURPOSE: Picks up TransactionCreatedEvent asynchronously and performs the
+ *          actual rule evaluation + alert generation, completely decoupled
+ *          from the request/response cycle that recorded the transaction.
  * 
  * HOW IT WORKS:
- *   - Marked with @Async to run on a separate thread pool (non-blocking)
- *   - When TransactionCreatedEvent is published, this method is triggered
- *   - Currently logs transaction to 'transactions_log.txt' for visibility
- * 
- * TEMPORARY BEHAVIOR:
- *   The code between the TEMP markers will be replaced when the Rule Engine
- *   is ready. The entire writeTransactionToFile() method will be removed.
- * 
- * FUTURE BEHAVIOR:
- *   - Will call ruleEngineService.evaluate(transaction)
- *   - Rule Engine will check all rules and create alerts if any rules trigger
+ *   - @TransactionalEventListener(phase = AFTER_COMMIT) defers this until
+ *     the transaction that saved the Transaction row has actually committed,
+ *     so evaluation never runs against a row that could still be rolled back.
+ *   - @Async("taskExecutor") routes the call onto the background thread pool
+ *     configured in AsyncConfig, so it never blocks the caller.
  * 
  * KEY INSIGHT: This is where rule evaluation happens, completely separate
- *              from transaction creation. By the time this runs, the transaction
- *              is already safely stored in the database.
+ *              from transaction creation. By the time this runs, the
+ *              transaction is already safely committed to the database.
  */
 package com.example.event;
 
 import com.example.entity.Transaction;
+import com.example.riskengine.service.RiskEvaluationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
-// NOTE: Lombok (@Slf4j) intentionally not used - see entity/Transaction.java note.
-// NOTE: Dead code - no one publishes TransactionCreatedEvent since evaluation
-// runs synchronously from TransactionService/RiskEvaluationService. Kept
-// compiling for now, gutted of the removed Transaction fields (timestamp/
-// source no longer exist on the real relational entity).
+// NOTE: Lombok (@Slf4j/@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
 @Component
 public class TransactionEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionEventListener.class);
 
+    private final RiskEvaluationService riskEvaluationService;
+
+    public TransactionEventListener(RiskEvaluationService riskEvaluationService) {
+        this.riskEvaluationService = riskEvaluationService;
+    }
+
     /**
-     * Picks up TransactionCreatedEvent on a background thread. Currently unused
-     * since transaction evaluation happens synchronously - kept for compatibility.
+     * Runs on a background thread ({@code taskExecutor}) only after the
+     * transaction that created this event has committed. Failures are caught
+     * here (rather than left to propagate on the async thread) so a bad rule
+     * evaluation can never affect the already-recorded transaction - it's
+     * also independently tracked via the TransactionQueueStatus=FAILED audit
+     * row written inside RiskEvaluationService.
      */
-    @Async
-    @EventListener
+    @Async("taskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTransactionCreated(TransactionCreatedEvent event) {
         Transaction tx = event.getTransaction();
-        log.debug("TransactionEventListener received event for transaction: {}", tx.getTransactionId());
+        try {
+            riskEvaluationService.evaluate(tx);
+            log.debug("Async evaluation completed for transaction {}", tx.getTransactionId());
+        } catch (RuntimeException ex) {
+            log.error("Async evaluation failed for transaction {}: {}", tx.getTransactionId(), ex.getMessage(), ex);
+        }
     }
 }
 

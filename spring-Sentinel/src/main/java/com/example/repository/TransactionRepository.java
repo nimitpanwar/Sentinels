@@ -31,6 +31,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
 
     List<Transaction> findByAccountAccountIdAndTransactionTimestampBetween(Integer accountId, LocalDateTime from, LocalDateTime to);
 
+    /** COUNT-only variant - avoids loading full rows (with their EAGER account/payee joins) just to count them. */
+    long countByAccountAccountIdAndTransactionTimestampBetween(Integer accountId, LocalDateTime from, LocalDateTime to);
+
     List<Transaction> findByAccountAccountIdAndPayeePayeeId(Integer accountId, Integer payeeId);
 
     List<Transaction> findByAccountAccountIdOrderByTransactionTimestampDesc(Integer accountId);

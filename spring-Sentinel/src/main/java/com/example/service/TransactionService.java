@@ -15,9 +15,12 @@
  *            They only differ in the 'source' parameter (API vs SIMULATOR).
  *            This ensures consistent handling regardless of where transactions come from.
  * 
- * EVENT PUBLISHING: After every save, it publishes TransactionCreatedEvent.
- *                   This triggers the event listener on a background thread
- *                   (which will eventually evaluate rules).
+ * EVENT PUBLISHING: After every save, it publishes TransactionCreatedEvent and
+ *                   returns immediately - it does NOT wait for rule evaluation.
+ *                   TransactionEventListener picks the event up on a background
+ *                   thread (after this method's transaction commits) and performs
+ *                   the actual scoring + alert creation there. This keeps
+ *                   recording fast and independent of rule evaluation.
  * 
  * DATABASE ACCESS: Only talks to the database through TransactionRepository.
  *                  Never writes SQL directly.
@@ -31,13 +34,17 @@ import com.example.entity.Payee;
 import com.example.entity.Transaction;
 import com.example.enums.TransactionSource;
 import com.example.enums.TransactionStatus;
+import com.example.entity.RuleEvaluation;
+import com.example.event.TransactionCreatedEvent;
 import com.example.repository.AccountRepository;
+import com.example.repository.AlertRepository;
 import com.example.repository.PayeeRepository;
+import com.example.repository.RuleEvaluationRepository;
 import com.example.repository.TransactionRepository;
 import com.example.riskengine.service.EvaluationOutcome;
-import com.example.riskengine.service.RiskEvaluationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,14 +60,19 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final PayeeRepository payeeRepository;
-    private final RiskEvaluationService riskEvaluationService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RuleEvaluationRepository ruleEvaluationRepository;
+    private final AlertRepository alertRepository;
 
     public TransactionService(TransactionRepository transactionRepository, AccountRepository accountRepository,
-                               PayeeRepository payeeRepository, RiskEvaluationService riskEvaluationService) {
+                               PayeeRepository payeeRepository, ApplicationEventPublisher eventPublisher,
+                               RuleEvaluationRepository ruleEvaluationRepository, AlertRepository alertRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.payeeRepository = payeeRepository;
-        this.riskEvaluationService = riskEvaluationService;
+        this.eventPublisher = eventPublisher;
+        this.ruleEvaluationRepository = ruleEvaluationRepository;
+        this.alertRepository = alertRepository;
     }
 
     @Transactional
@@ -86,26 +98,98 @@ public class TransactionService {
         Transaction saved = transactionRepository.save(tx);
         log.debug("Transaction saved: {} [{}]", saved.getTransactionId(), source);
 
-        // Synchronous: score + alert-check happen in the same request/response
-        // cycle, so the caller sees the final risk outcome immediately.
-        EvaluationOutcome outcome = riskEvaluationService.evaluate(saved);
+        // Decoupled: recording stays fast/independent of rule evaluation.
+        // Publish the event and return immediately - TransactionEventListener
+        // picks it up asynchronously (only after this transaction commits)
+        // and performs the actual scoring + alert creation on a background
+        // thread. Callers won't see riskScore/alertId in this response; poll
+        // GET /api/transactions/{id} or GET /api/alerts afterward.
+        eventPublisher.publishEvent(new TransactionCreatedEvent(this, saved));
 
-        return toResponse(saved, outcome);
+        return toResponse(saved, null);
     }
 
     @Transactional(readOnly = true)
     public List<TransactionResponse> getAllTransactions() {
         return transactionRepository.findAll()
                 .stream()
-                .map(tx -> toResponse(tx, null))
+                .map(this::toResponseWithStoredEvaluation)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public TransactionResponse getTransactionById(Integer id) {
         return transactionRepository.findById(id)
-                .map(tx -> toResponse(tx, null))
+                .map(this::toResponseWithStoredEvaluation)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+    }
+
+    /**
+     * Builds the response for an already-recorded transaction by looking up
+     * whatever the async TransactionEventListener has (or hasn't yet) written
+     * to the DB - rule_evaluations always get logged (even for non-triggering
+     * rules), alerts only exist if the risk score crossed the alert threshold.
+     * Previously this always passed a null EvaluationOutcome here, so GET
+     * responses NEVER showed the risk score/alert/case even long after async
+     * evaluation had completed - that was the bug.
+     */
+    private TransactionResponse toResponseWithStoredEvaluation(Transaction tx) {
+        List<RuleEvaluation> evaluations = ruleEvaluationRepository.findByTransactionTransactionId(tx.getTransactionId());
+        if (evaluations.isEmpty()) {
+            // Async evaluation hasn't run yet (or produced nothing) - not a bug,
+            // just means the background listener hasn't picked it up yet.
+            return toResponse(tx, null);
+        }
+
+        double weightedSum = 0.0;
+        double totalWeight = 0.0;
+        List<String> triggeredRuleNames = evaluations.stream()
+                .filter(RuleEvaluation::isTriggered)
+                .map(e -> e.getRule().getRuleType().name())
+                .toList();
+        List<String> evidence = evaluations.stream()
+                .filter(RuleEvaluation::isTriggered)
+                .map(RuleEvaluation::getReason)
+                .toList();
+        for (RuleEvaluation e : evaluations) {
+            if (e.isTriggered()) {
+                double weight = e.getRule().getWeight().doubleValue();
+                weightedSum += e.getRiskScore().doubleValue() * weight;
+                totalWeight += weight;
+            }
+        }
+        int riskScore = totalWeight == 0 ? 0 : (int) Math.round((weightedSum / totalWeight) * 100);
+
+        TransactionResponse.Builder builder = TransactionResponse.builder()
+                .transactionId(tx.getTransactionId())
+                .accountId(tx.getAccountId())
+                .payeeId(tx.getPayeeId())
+                .amount(tx.getAmount())
+                .currency(tx.getCurrency())
+                .type(tx.getType())
+                .transactionTimestamp(tx.getTransactionTimestamp())
+                .status(tx.getStatus())
+                .description(tx.getDescription())
+                .createdAt(tx.getCreatedAt())
+                .location(tx.getLocation())
+                .merchantCategory(tx.getMerchantCategory())
+                .riskScore(riskScore)
+                .triggeredRules(triggeredRuleNames)
+                .evidence(evidence);
+
+        alertRepository.findByTransactionTransactionId(tx.getTransactionId()).ifPresent(alert -> {
+            builder.alertId(alert.getAlertId())
+                    .alertSeverity(alert.getSeverity() != null ? alert.getSeverity().name() : null)
+                    .alertStatus(alert.getStatus() != null ? alert.getStatus().name() : null);
+
+            if (alert.getCase() != null) {
+                builder.caseId(alert.getCase().getCaseId())
+                        .caseSeverity(alert.getCase().getSeverity() != null ? alert.getCase().getSeverity().name() : null)
+                        .caseStatus(alert.getCase().getStatus() != null ? alert.getCase().getStatus().name() : null);
+            }
+        });
+
+        return builder.build();
     }
 
     private TransactionResponse toResponse(Transaction tx, EvaluationOutcome outcome) {
