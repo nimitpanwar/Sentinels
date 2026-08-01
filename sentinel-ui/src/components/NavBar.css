@@ -1,0 +1,48 @@
+/* ── Navigation bar ───────────────────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 32px;
+  height: 52px;
+  background: #1e293b;
+  color: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.navbar-brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  user-select: none;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 4px;
+}
+
+.navbar-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.navbar-link:hover {
+  color: #f1f5f9;
+  background: rgba(255,255,255,0.08);
+}
+
+.navbar-link--active {
+  color: #f1f5f9;
+  background: rgba(255,255,255,0.12);
+}
