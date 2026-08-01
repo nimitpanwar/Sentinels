@@ -1,0 +1,4 @@
+/* FilterBar.css — imported by FilterBar.jsx. All rules are already in transactions.css;
+   this file exists so FilterBar can import its own CSS without coupling it to the
+   parent page's import. Re-exports the same sheet. */
+@import './transactions.css';
