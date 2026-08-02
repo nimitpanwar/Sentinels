@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the 'rule_evaluations' table - an audit row logged for
@@ -50,7 +51,7 @@ public class RuleEvaluation {
     @PrePersist
     public void prePersist() {
         if (evaluatedAt == null) {
-            evaluatedAt = LocalDateTime.now();
+            evaluatedAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

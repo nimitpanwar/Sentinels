@@ -9,8 +9,10 @@
  *     Input: TransactionRequest (accountId, payeeId, amount, etc.)
  *     Output: TransactionResponse (includes generated ID, timestamp, status)
  *   
- *   - GET /api/transactions: Retrieve all transactions
- *     Output: List of TransactionResponse objects
+ *   - GET /api/transactions: Retrieve transactions, paginated (page/size/sort)
+ *     and optionally filtered (accountId, payeeId, status, type, minAmount,
+ *     maxAmount, from, to, search - all optional, combined with AND).
+ *     Output: Spring Page<TransactionResponse> ({content, totalElements, ...})
  *   
  *   - GET /api/transactions/{id}: Retrieve a single transaction by ID
  *     Output: Single TransactionResponse object
@@ -26,15 +28,24 @@
  */
 package com.example.controller;
 
+import com.example.dto.TransactionFilter;
 import com.example.dto.TransactionRequest;
 import com.example.dto.TransactionResponse;
 import com.example.enums.TransactionSource;
+import com.example.enums.TransactionStatus;
+import com.example.enums.TransactionType;
 import com.example.service.TransactionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 // NOTE: Lombok (@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
 @RestController
@@ -54,8 +65,19 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> getAll() {
-        return ResponseEntity.ok(transactionService.getAllTransactions());
+    public ResponseEntity<Page<TransactionResponse>> getAll(
+            @RequestParam(required = false) Integer accountId,
+            @RequestParam(required = false) Integer payeeId,
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 50, sort = "transactionTimestamp", direction = Sort.Direction.DESC) Pageable pageable) {
+        TransactionFilter filter = new TransactionFilter(accountId, payeeId, status, type, minAmount, maxAmount, from, to, search);
+        return ResponseEntity.ok(transactionService.getTransactions(filter, pageable));
     }
 
     @GetMapping("/{id}")

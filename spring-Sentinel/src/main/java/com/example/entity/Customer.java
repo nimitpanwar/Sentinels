@@ -3,6 +3,7 @@ package com.example.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /** JPA entity for the 'customers' table. No Lombok - see entity/Transaction.java note. */
 @Entity
@@ -38,7 +39,7 @@ public class Customer {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

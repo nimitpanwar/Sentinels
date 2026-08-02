@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 /**
@@ -45,7 +46,7 @@ public class RiskEvaluationService {
         TransactionQueueStatus queueStatus = new TransactionQueueStatus();
         queueStatus.setTransaction(transaction);
         queueStatus.setQueueStatus(QueueStatus.PROCESSING);
-        queueStatus.setPickedUpAt(LocalDateTime.now());
+        queueStatus.setPickedUpAt(LocalDateTime.now(ZoneOffset.UTC));
         queueStatus = queueStatusRepository.save(queueStatus);
 
         try {
@@ -53,7 +54,7 @@ public class RiskEvaluationService {
             Optional<Alert> alert = alertManager.process(riskResult, transaction);
 
             queueStatus.setQueueStatus(QueueStatus.EVALUATED);
-            queueStatus.setEvaluatedAt(LocalDateTime.now());
+            queueStatus.setEvaluatedAt(LocalDateTime.now(ZoneOffset.UTC));
             queueStatusRepository.save(queueStatus);
 
             return new EvaluationOutcome(riskResult, alert);

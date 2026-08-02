@@ -27,6 +27,7 @@
  */
 package com.example.service;
 
+import com.example.dto.TransactionFilter;
 import com.example.dto.TransactionRequest;
 import com.example.dto.TransactionResponse;
 import com.example.entity.Account;
@@ -41,14 +42,19 @@ import com.example.repository.AlertRepository;
 import com.example.repository.PayeeRepository;
 import com.example.repository.RuleEvaluationRepository;
 import com.example.repository.TransactionRepository;
+import com.example.repository.TransactionSpecifications;
 import com.example.riskengine.service.EvaluationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 // NOTE: Lombok (@Slf4j/@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
@@ -88,7 +94,7 @@ public class TransactionService {
                 .amount(request.getAmount())
                 .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
                 .type(request.getType())
-                .transactionTimestamp(LocalDateTime.now())
+                .transactionTimestamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(TransactionStatus.COMPLETED)
                 .description(request.getDescription())
                 .location(request.getLocation())
@@ -109,12 +115,28 @@ public class TransactionService {
         return toResponse(saved, null);
     }
 
+    /**
+     * Paginated, filterable transaction listing (Appendix C "Transactions
+     * List Screen" - filter by date range/account/amount range, search by
+     * ID or description, sort by any column via Pageable). Filters are
+     * combined with AND; any null field in {@code filter} means "no
+     * constraint on that field".
+     */
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getAllTransactions() {
-        return transactionRepository.findAll()
-                .stream()
-                .map(this::toResponseWithStoredEvaluation)
-                .toList();
+    public Page<TransactionResponse> getTransactions(TransactionFilter filter, Pageable pageable) {
+        Specification<Transaction> spec = Specification
+                .where(TransactionSpecifications.hasAccountId(filter.accountId()))
+                .and(TransactionSpecifications.hasPayeeId(filter.payeeId()))
+                .and(TransactionSpecifications.hasStatus(filter.status()))
+                .and(TransactionSpecifications.hasType(filter.type()))
+                .and(TransactionSpecifications.amountAtLeast(filter.minAmount()))
+                .and(TransactionSpecifications.amountAtMost(filter.maxAmount()))
+                .and(TransactionSpecifications.timestampFrom(filter.from()))
+                .and(TransactionSpecifications.timestampTo(filter.to()))
+                .and(TransactionSpecifications.search(filter.search()));
+
+        return transactionRepository.findAll(spec, pageable)
+                .map(this::toResponseWithStoredEvaluation);
     }
 
     @Transactional(readOnly = true)
