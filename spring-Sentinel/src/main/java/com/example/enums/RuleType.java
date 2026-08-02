@@ -9,6 +9,7 @@ package com.example.enums;
  */
 public enum RuleType {
     AMOUNT_ANOMALY,
+    AMOUNT_THRESHOLD,
     VELOCITY,
     NEW_PAYEE,
     TIME_ANOMALY,

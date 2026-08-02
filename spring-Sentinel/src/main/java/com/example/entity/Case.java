@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the 'cases' table - the investigation unit an analyst
@@ -56,6 +57,11 @@ public class Case {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    // Set the first time this case is acknowledged (see AlertManager.updateCaseStatus).
+    // Used to compute "average time to acknowledge" for the stats endpoint.
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
@@ -73,7 +79,7 @@ public class Case {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 
@@ -93,6 +99,8 @@ public class Case {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getClosedAt() { return closedAt; }
     public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+    public LocalDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
     public LocalDateTime getLastAlertAt() { return lastAlertAt; }

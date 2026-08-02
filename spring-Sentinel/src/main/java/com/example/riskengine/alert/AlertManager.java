@@ -17,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The Alert Manager.
@@ -38,6 +41,9 @@ import java.util.Optional;
 public class AlertManager {
 
     private static final Logger log = LoggerFactory.getLogger(AlertManager.class);
+
+    /** A case in either of these statuses is resolved and must never receive newly-merged alerts. */
+    private static final Set<CaseStatus> TERMINAL_STATUSES = Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED);
 
     private final AlertConfig alertConfig;
     private final AlertRepository alertRepository;
@@ -98,8 +104,21 @@ public class AlertManager {
         // Pessimistic write lock: held until this transaction commits, so a
         // second concurrent evaluation for the same account blocks here
         // instead of also seeing "no open case" and creating a duplicate one.
-        List<Case> candidates = caseRepository.findByAccountForUpdate(
-                transaction.getAccountId(), CaseStatus.CLOSED);
+        List<Case> candidates;
+        try {
+            candidates = caseRepository.findByAccountForUpdate(
+                    transaction.getAccountId(), TERMINAL_STATUSES);
+        } catch (IllegalArgumentException ex) {
+            // A case row for this account has a status value that no longer exists in
+            // CaseStatus (e.g. left over from an old enum definition, migrated data, or a
+            // manual DB edit). Don't let one corrupt row silently block every future alert
+            // for this account - log it clearly and fall back to opening a new case instead
+            // of merging into the unreadable one.
+            log.error("Could not load existing cases for account {} - a row has a status value " +
+                            "not in CaseStatus (stale/invalid data). Opening a new case instead of merging. Cause: {}",
+                    transaction.getAccountId(), ex.getMessage());
+            candidates = List.of();
+        }
 
         Optional<Case> existing = candidates.stream()
                 .filter(c -> isWithinMergeWindow(c, riskResult))
@@ -141,15 +160,34 @@ public class AlertManager {
     }
 
     // ---- Case lifecycle actions (used by CaseController) ----
+    //
+    // Enforced state machine (see Appendix E "Alert Status Validation" -
+    // closing without acknowledging first, or reopening a closed/dismissed
+    // case, are both deliberately rejected rather than silently allowed):
+    //
+    //   OPEN -> ACKNOWLEDGED -> INVESTIGATING -> CLOSED
+    //              |                 |
+    //              v                 v
+    //          DISMISSED         DISMISSED
+    //
+    // CLOSED and DISMISSED are terminal - no outgoing transitions.
+
+    private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = Map.of(
+            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED),
+            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.CLOSED, CaseStatus.DISMISSED),
+            CaseStatus.INVESTIGATING, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
+            // CLOSED, DISMISSED: intentionally absent - terminal states.
+    );
 
     @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.IN_REVIEW, null);
+        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null);
     }
 
+    /** "Mark as Investigating" - moves an already-acknowledged case into active investigation. */
     @Transactional
-    public Optional<Case> escalate(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.ESCALATED, null);
+    public Optional<Case> investigate(Integer caseId) {
+        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null);
     }
 
     @Transactional
@@ -157,16 +195,37 @@ public class AlertManager {
         return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes);
     }
 
-    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus status, String resolutionNotes) {
+    /** Marks the case a false positive / not requiring action - a terminal state distinct from CLOSED. */
+    @Transactional
+    public Optional<Case> dismiss(Integer caseId, String resolutionNotes) {
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes);
+    }
+
+    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes) {
         return caseRepository.findById(caseId).map(c -> {
-            c.setStatus(status);
+            CaseStatus currentStatus = c.getStatus();
+            if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
+                throw new InvalidCaseTransitionException(currentStatus, newStatus);
+            }
+
+            c.setStatus(newStatus);
             if (resolutionNotes != null) {
                 c.setResolutionNotes(resolutionNotes);
             }
-            if (status == CaseStatus.CLOSED) {
-                c.setClosedAt(LocalDateTime.now());
+            if (newStatus == CaseStatus.ACKNOWLEDGED && c.getAcknowledgedAt() == null) {
+                c.setAcknowledgedAt(LocalDateTime.now(ZoneOffset.UTC));
             }
-            return caseRepository.save(c);
+            if (newStatus == CaseStatus.CLOSED || newStatus == CaseStatus.DISMISSED) {
+                c.setClosedAt(LocalDateTime.now(ZoneOffset.UTC));
+            }
+            Case saved = caseRepository.save(c);
+
+            // Keep every Alert row linked to this case in sync with its lifecycle -
+            // otherwise Alert.status would stay frozen at OPEN forever (see
+            // entity/Alert.java), even though the case it belongs to has moved on.
+            alertRepository.updateStatusByCaseId(saved.getCaseId(), newStatus);
+
+            return saved;
         });
     }
 }

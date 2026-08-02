@@ -5,6 +5,7 @@ import com.example.enums.AccountType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /** JPA entity for the 'accounts' table. No Lombok - see entity/Transaction.java note. */
 @Entity
@@ -43,7 +44,7 @@ public class Account {
     @PrePersist
     public void prePersist() {
         if (openedAt == null) {
-            openedAt = LocalDateTime.now();
+            openedAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 
