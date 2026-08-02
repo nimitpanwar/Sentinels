@@ -55,7 +55,7 @@ public final class TransactionSpecifications {
     /** Matches an exact transaction ID (if search parses as one) OR a case-insensitive description substring. */
     public static Specification<Transaction> search(String search) {
         if (search == null || search.isBlank()) {
-            return null;
+            return (root, query, cb) -> null;
         }
         String likePattern = "%" + search.trim().toLowerCase() + "%";
         Integer asId = parseIntOrNull(search.trim());

@@ -1,6 +1,7 @@
 package com.example.entity;
 
 import com.example.enums.CaseStatus;
+import com.example.enums.ResolutionReasonCode;
 import com.example.enums.Severity;
 import jakarta.persistence.*;
 
@@ -65,6 +66,14 @@ public class Case {
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
+    // Structured counterpart to resolutionNotes, set only when status becomes
+    // CLOSED/DISMISSED (see AlertManager.updateCaseStatus). Distinguishes
+    // "confirmed fraud" from other resolutions without parsing free text -
+    // consumed by the network-analysis job to seed personalized PageRank.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resolution_reason_code", length = 40)
+    private ResolutionReasonCode resolutionReasonCode;
+
     // Denormalized copy of this case's most recent alert's createdAt, kept in
     // sync by AlertManager on every merge/create. Lets isWithinMergeWindow()
     // do a plain in-memory comparison instead of a separate DB query per
@@ -103,6 +112,8 @@ public class Case {
     public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+    public ResolutionReasonCode getResolutionReasonCode() { return resolutionReasonCode; }
+    public void setResolutionReasonCode(ResolutionReasonCode resolutionReasonCode) { this.resolutionReasonCode = resolutionReasonCode; }
     public LocalDateTime getLastAlertAt() { return lastAlertAt; }
     public void setLastAlertAt(LocalDateTime lastAlertAt) { this.lastAlertAt = lastAlertAt; }
 }

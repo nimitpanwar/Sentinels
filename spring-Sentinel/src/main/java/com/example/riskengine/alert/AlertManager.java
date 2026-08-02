@@ -4,6 +4,7 @@ import com.example.entity.Alert;
 import com.example.entity.Case;
 import com.example.entity.Transaction;
 import com.example.enums.CaseStatus;
+import com.example.enums.ResolutionReasonCode;
 import com.example.repository.AlertRepository;
 import com.example.repository.CaseRepository;
 import com.example.riskengine.config.AlertConfig;
@@ -181,27 +182,27 @@ public class AlertManager {
 
     @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null);
+        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null);
     }
 
     /** "Mark as Investigating" - moves an already-acknowledged case into active investigation. */
     @Transactional
     public Optional<Case> investigate(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null);
+        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null);
     }
 
     @Transactional
-    public Optional<Case> close(Integer caseId, String resolutionNotes) {
-        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes);
+    public Optional<Case> close(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
+        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode);
     }
 
     /** Marks the case a false positive / not requiring action - a terminal state distinct from CLOSED. */
     @Transactional
-    public Optional<Case> dismiss(Integer caseId, String resolutionNotes) {
-        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes);
+    public Optional<Case> dismiss(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode);
     }
 
-    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes) {
+    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes, ResolutionReasonCode reasonCode) {
         return caseRepository.findById(caseId).map(c -> {
             CaseStatus currentStatus = c.getStatus();
             if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
@@ -211,6 +212,9 @@ public class AlertManager {
             c.setStatus(newStatus);
             if (resolutionNotes != null) {
                 c.setResolutionNotes(resolutionNotes);
+            }
+            if (reasonCode != null) {
+                c.setResolutionReasonCode(reasonCode);
             }
             if (newStatus == CaseStatus.ACKNOWLEDGED && c.getAcknowledgedAt() == null) {
                 c.setAcknowledgedAt(LocalDateTime.now(ZoneOffset.UTC));

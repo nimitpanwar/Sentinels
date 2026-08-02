@@ -8,3 +8,33 @@ body {
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* ── Top-level page nav (Transactions / Network Insights) ────────────── */
+
+.app-nav {
+  display: flex;
+  gap: 4px;
+  padding: 12px 32px 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.app-nav-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 14px;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.app-nav-tab:hover {
+  color: #111827;
+}
+
+.app-nav-tab.is-active {
+  color: #1e40af;
+  border-bottom-color: #1e40af;
+}

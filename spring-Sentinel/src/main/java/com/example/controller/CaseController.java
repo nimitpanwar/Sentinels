@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.dto.CaseStatsResponse;
 import com.example.entity.Case;
 import com.example.enums.CaseStatus;
+import com.example.enums.ResolutionReasonCode;
 import com.example.repository.CaseRepository;
 import com.example.riskengine.alert.AlertManager;
 import com.example.riskengine.alert.InvalidCaseTransitionException;
@@ -64,7 +65,8 @@ public class CaseController {
     @PatchMapping("/{id}/close")
     public ResponseEntity<Case> close(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> body) {
         String resolutionNotes = body != null ? body.get("resolutionNotes") : null;
-        return alertManager.close(id, resolutionNotes)
+        ResolutionReasonCode reasonCode = parseReasonCode(body);
+        return alertManager.close(id, resolutionNotes, reasonCode)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -73,9 +75,26 @@ public class CaseController {
     @PatchMapping("/{id}/dismiss")
     public ResponseEntity<Case> dismiss(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> body) {
         String resolutionNotes = body != null ? body.get("resolutionNotes") : null;
-        return alertManager.dismiss(id, resolutionNotes)
+        ResolutionReasonCode reasonCode = parseReasonCode(body);
+        return alertManager.dismiss(id, resolutionNotes, reasonCode)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** Parses the optional "resolutionReasonCode" field (fixed list - see enums.ResolutionReasonCode); returns null (not set) if absent or blank. */
+    private ResolutionReasonCode parseReasonCode(Map<String, String> body) {
+        if (body == null) {
+            return null;
+        }
+        String raw = body.get("resolutionReasonCode");
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return ResolutionReasonCode.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Unknown resolutionReasonCode: " + raw);
+        }
     }
 
     /** Aggregate stats for the dashboard - count by status plus average time-to-acknowledge/close, in minutes. */
@@ -96,6 +115,12 @@ public class CaseController {
     @ExceptionHandler(InvalidCaseTransitionException.class)
     public ResponseEntity<Map<String, String>> handleInvalidTransition(InvalidCaseTransitionException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    /** An unrecognized resolutionReasonCode value is a 400, not a 500. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
     }
 
     private Double averageMinutes(List<Object[]> rows) {
