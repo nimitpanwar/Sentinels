@@ -5,6 +5,8 @@ import TransactionsPage from './components/transactions/TransactionsPage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
+import OverviewPage from './components/overview/OverviewPage';
+import AssistantPage from './components/assistant/AssistantPage';
 import { fetchAlerts } from './api/alertsApi';
 
 const STALE_MS = 30_000;
@@ -56,24 +58,37 @@ export default function App() {
   return (
     <>
       <NavBar />
-      <Routes>
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/alerts"
-          element={
-            <AlertsPage
-              alerts={alerts}
-              loading={loading}
-              error={error}
-              onMount={ensureLoaded}
-            />
-          }
-        />
-        <Route path="/alerts/:id"
-          element={<AlertDetailPage updateAlert={updateAlert} />}
-        />
-        <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
-        <Route path="*" element={<Navigate to="/transactions" replace />} />
-      </Routes>
+      <div className="app-content">
+        <Routes>
+          <Route path="/overview"
+            element={
+              <OverviewPage
+                alerts={alerts}
+                loading={loading}
+                error={error}
+                onMount={ensureLoaded}
+              />
+            }
+          />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/assistant" element={<AssistantPage />} />
+          <Route path="/alerts"
+            element={
+              <AlertsPage
+                alerts={alerts}
+                loading={loading}
+                error={error}
+                onMount={ensureLoaded}
+              />
+            }
+          />
+          <Route path="/alerts/:id"
+            element={<AlertDetailPage updateAlert={updateAlert} />}
+          />
+          <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
+          <Route path="*" element={<Navigate to="/transactions" replace />} />
+        </Routes>
+      </div>
     </>
   );
 }

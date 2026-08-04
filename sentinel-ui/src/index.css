@@ -1,22 +1,68 @@
+/* ================================================================
+   Global design tokens — "Sentinel Command Center" theme.
+   See notes/UIDesign.md for the source specification.
+   ================================================================ */
+
+:root {
+  /* Color palette */
+  --bg-primary: #121317;
+  --bg-surface: #1a1b1f;
+  --bg-surface-alt: #202127;
+  --bg-deepest: #0d0e12;
+  --text-primary: #ffffff;
+  --text-dim: #8a8d91;
+  --text-dimmer: #5b5d62;
+  --accent-critical: #ff4c4c;
+  --accent-success: #00ff88;
+  --accent-warning: #ffcc00;
+  --border-color: #38393d;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', 'Courier New', Courier, monospace;
+
+  /* Spacing / shape */
+  --radius: 2px;
+  --sidebar-width: 212px;
+  --statusbar-height: 28px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  background: #f3f4f6;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+html, body, #root {
+  min-height: 100%;
 }
 
-/* ── Top-level page nav (Transactions / Network Insights) ────────────── */
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--accent-critical);
+  color: #ffffff;
+}
+
+/* Content area to the right of the fixed sidebar / above the status bar */
+.app-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  padding-bottom: var(--statusbar-height);
+  background: var(--bg-primary);
+}
+
+/* ── Top-level page nav (legacy tab strip, kept for reuse) ────────────── */
 
 .app-nav {
   display: flex;
   gap: 4px;
   padding: 12px 32px 0;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .app-nav-tab {
@@ -26,15 +72,15 @@ body {
   padding: 10px 14px;
   font-size: 0.95em;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-dim);
   cursor: pointer;
 }
 
 .app-nav-tab:hover {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .app-nav-tab.is-active {
-  color: #1e40af;
-  border-bottom-color: #1e40af;
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-critical);
 }

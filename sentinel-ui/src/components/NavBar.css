@@ -1,48 +1,105 @@
-/* ── Navigation bar ───────────────────────────────────────────── */
+/* ── Navigation shell: fixed vertical sidebar ─────────────────── */
 .navbar {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  padding: 0 32px;
-  height: 52px;
-  background: #1e293b;
-  color: #f8fafc;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: var(--statusbar-height, 28px);
+  width: var(--sidebar-width, 212px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface, #1a1b1f);
+  border-right: 1px solid var(--border-color, #38393d);
+  overflow-y: auto;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
 
 .navbar-brand {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  padding: 22px 20px 18px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #e2e8f0;
+  color: var(--text-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #38393d);
   user-select: none;
 }
 
 .navbar-links {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
 }
 
 .navbar-link {
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius, 2px);
+  border-left: 2px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim, #8a8d91);
   text-decoration: none;
-  transition: color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.navbar-link-icon {
+  width: 18px;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  text-align: center;
 }
 
 .navbar-link:hover {
-  color: #f1f5f9;
-  background: rgba(255,255,255,0.08);
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .navbar-link--active {
-  color: #f1f5f9;
-  background: rgba(255,255,255,0.12);
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.07);
+  border-left-color: var(--accent-critical, #ff4c4c);
 }
+
+/* ── Global status bar: fixed at the very bottom of the viewport ─ */
+.status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--statusbar-height, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: var(--bg-deepest, #0d0e12);
+  border-top: 1px solid var(--border-color, #38393d);
+  color: var(--text-dim, #8a8d91);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  z-index: 200;
+}
+
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-success, #00ff88);
+  box-shadow: 0 0 5px var(--accent-success, #00ff88);
+}
+
+.status-bar-time {
+  color: var(--text-dim, #8a8d91);
+}
+
