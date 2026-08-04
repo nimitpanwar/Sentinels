@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the 'rule_evaluations' table - an audit row logged for
@@ -11,7 +12,12 @@ import java.time.LocalDateTime;
  * triggered), so the full evaluation history is inspectable later.
  */
 @Entity
-@Table(name = "rule_evaluations")
+@Table(
+    name = "rule_evaluations",
+    indexes = {
+        @Index(name = "idx_ruleeval_transaction", columnList = "transaction_id")
+    }
+)
 public class RuleEvaluation {
 
     @Id
@@ -45,7 +51,7 @@ public class RuleEvaluation {
     @PrePersist
     public void prePersist() {
         if (evaluatedAt == null) {
-            evaluatedAt = LocalDateTime.now();
+            evaluatedAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

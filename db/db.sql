@@ -85,6 +85,7 @@ CREATE TABLE rules (
     rule_name        VARCHAR(150) NOT NULL,
     rule_type        ENUM(
                         'AMOUNT_ANOMALY',
+                        'AMOUNT_THRESHOLD',
                         'VELOCITY',
                         'NEW_PAYEE',
                         'TIME_ANOMALY',

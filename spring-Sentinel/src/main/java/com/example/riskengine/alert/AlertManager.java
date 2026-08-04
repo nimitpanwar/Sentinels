@@ -4,6 +4,7 @@ import com.example.entity.Alert;
 import com.example.entity.Case;
 import com.example.entity.Transaction;
 import com.example.enums.CaseStatus;
+import com.example.enums.ResolutionReasonCode;
 import com.example.repository.AlertRepository;
 import com.example.repository.CaseRepository;
 import com.example.riskengine.config.AlertConfig;
@@ -17,9 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The Alert Manager.
@@ -39,6 +43,9 @@ public class AlertManager {
 
     private static final Logger log = LoggerFactory.getLogger(AlertManager.class);
 
+    /** A case in either of these statuses is resolved and must never receive newly-merged alerts. */
+    private static final Set<CaseStatus> TERMINAL_STATUSES = Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED);
+
     private final AlertConfig alertConfig;
     private final AlertRepository alertRepository;
     private final CaseRepository caseRepository;
@@ -57,6 +64,15 @@ public class AlertManager {
      * account around the case lookup/create-or-merge step, and avoids the
      * wider gap-locking that MySQL's default REPEATABLE_READ would take for
      * a locked range scan under concurrent inserts (higher deadlock risk).
+     *
+     * NOTE: an in-JVM ReentrantLock replacement was tried here and reverted -
+     * releasing a Java lock inside this method body happens BEFORE Spring's
+     * @Transactional proxy actually commits (commit happens in the proxy,
+     * after this method returns), so a second thread could acquire the JVM
+     * lock and read stale (not-yet-committed) case state. Confirmed via a
+     * live test: two concurrent evaluations for the same account both saw
+     * "no open case" and created duplicate cases 31ms apart. A DB row lock
+     * doesn't have this gap since it's held until the actual commit.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<Alert> process(RiskResult riskResult, Transaction transaction) {
@@ -89,8 +105,21 @@ public class AlertManager {
         // Pessimistic write lock: held until this transaction commits, so a
         // second concurrent evaluation for the same account blocks here
         // instead of also seeing "no open case" and creating a duplicate one.
-        List<Case> candidates = caseRepository.findByAccountForUpdate(
-                transaction.getAccountId(), CaseStatus.CLOSED);
+        List<Case> candidates;
+        try {
+            candidates = caseRepository.findByAccountForUpdate(
+                    transaction.getAccountId(), TERMINAL_STATUSES);
+        } catch (IllegalArgumentException ex) {
+            // A case row for this account has a status value that no longer exists in
+            // CaseStatus (e.g. left over from an old enum definition, migrated data, or a
+            // manual DB edit). Don't let one corrupt row silently block every future alert
+            // for this account - log it clearly and fall back to opening a new case instead
+            // of merging into the unreadable one.
+            log.error("Could not load existing cases for account {} - a row has a status value " +
+                            "not in CaseStatus (stale/invalid data). Opening a new case instead of merging. Cause: {}",
+                    transaction.getAccountId(), ex.getMessage());
+            candidates = List.of();
+        }
 
         Optional<Case> existing = candidates.stream()
                 .filter(c -> isWithinMergeWindow(c, riskResult))
@@ -101,6 +130,7 @@ public class AlertManager {
             int mergedScore = Math.max(aCase.getRiskScore().intValue(), riskResult.getRiskScore());
             aCase.setRiskScore(toScoreDecimal(mergedScore));
             aCase.setSeverity(alertConfig.severityFor(mergedScore));
+            aCase.setLastAlertAt(riskResult.getTransactionTimestamp());
             caseRepository.save(aCase);
             log.info("Merged transaction {} into existing case {} (new score={})",
                     riskResult.getTransactionId(), aCase.getCaseId(), mergedScore);
@@ -112,6 +142,7 @@ public class AlertManager {
         aCase.setRiskScore(toScoreDecimal(riskResult.getRiskScore()));
         aCase.setSeverity(alertConfig.severityFor(riskResult.getRiskScore()));
         aCase.setStatus(CaseStatus.OPEN);
+        aCase.setLastAlertAt(riskResult.getTransactionTimestamp());
         aCase = caseRepository.save(aCase);
         log.info("Created new case {} for account {} (score={})",
                 aCase.getCaseId(), transaction.getAccountId(), riskResult.getRiskScore());
@@ -120,9 +151,7 @@ public class AlertManager {
 
     /** Merge cooldown is measured from the case's most recent alert (or its creation time if it has none yet). */
     private boolean isWithinMergeWindow(Case aCase, RiskResult riskResult) {
-        LocalDateTime referenceTime = alertRepository.findFirstByACaseCaseIdOrderByCreatedAtDesc(aCase.getCaseId())
-                .map(Alert::getCreatedAt)
-                .orElse(aCase.getCreatedAt());
+        LocalDateTime referenceTime = aCase.getLastAlertAt() != null ? aCase.getLastAlertAt() : aCase.getCreatedAt();
         long minutesSince = ChronoUnit.MINUTES.between(referenceTime, riskResult.getTransactionTimestamp());
         return minutesSince <= alertConfig.getMergeCooldownMinutes();
     }
@@ -132,32 +161,75 @@ public class AlertManager {
     }
 
     // ---- Case lifecycle actions (used by CaseController) ----
+    //
+    // Enforced state machine (see Appendix E "Alert Status Validation" -
+    // closing without acknowledging first, or reopening a closed/dismissed
+    // case, are both deliberately rejected rather than silently allowed):
+    //
+    //   OPEN -> ACKNOWLEDGED -> INVESTIGATING -> CLOSED
+    //              |                 |
+    //              v                 v
+    //          DISMISSED         DISMISSED
+    //
+    // CLOSED and DISMISSED are terminal - no outgoing transitions.
+
+    private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = Map.of(
+            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED),
+            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.CLOSED, CaseStatus.DISMISSED),
+            CaseStatus.INVESTIGATING, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
+            // CLOSED, DISMISSED: intentionally absent - terminal states.
+    );
 
     @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.IN_REVIEW, null);
+        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null);
+    }
+
+    /** "Mark as Investigating" - moves an already-acknowledged case into active investigation. */
+    @Transactional
+    public Optional<Case> investigate(Integer caseId) {
+        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null);
     }
 
     @Transactional
-    public Optional<Case> escalate(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.ESCALATED, null);
+    public Optional<Case> close(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
+        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode);
     }
 
+    /** Marks the case a false positive / not requiring action - a terminal state distinct from CLOSED. */
     @Transactional
-    public Optional<Case> close(Integer caseId, String resolutionNotes) {
-        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes);
+    public Optional<Case> dismiss(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode);
     }
 
-    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus status, String resolutionNotes) {
+    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes, ResolutionReasonCode reasonCode) {
         return caseRepository.findById(caseId).map(c -> {
-            c.setStatus(status);
+            CaseStatus currentStatus = c.getStatus();
+            if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
+                throw new InvalidCaseTransitionException(currentStatus, newStatus);
+            }
+
+            c.setStatus(newStatus);
             if (resolutionNotes != null) {
                 c.setResolutionNotes(resolutionNotes);
             }
-            if (status == CaseStatus.CLOSED) {
-                c.setClosedAt(LocalDateTime.now());
+            if (reasonCode != null) {
+                c.setResolutionReasonCode(reasonCode);
             }
-            return caseRepository.save(c);
+            if (newStatus == CaseStatus.ACKNOWLEDGED && c.getAcknowledgedAt() == null) {
+                c.setAcknowledgedAt(LocalDateTime.now(ZoneOffset.UTC));
+            }
+            if (newStatus == CaseStatus.CLOSED || newStatus == CaseStatus.DISMISSED) {
+                c.setClosedAt(LocalDateTime.now(ZoneOffset.UTC));
+            }
+            Case saved = caseRepository.save(c);
+
+            // Keep every Alert row linked to this case in sync with its lifecycle -
+            // otherwise Alert.status would stay frozen at OPEN forever (see
+            // entity/Alert.java), even though the case it belongs to has moved on.
+            alertRepository.updateStatusByCaseId(saved.getCaseId(), newStatus);
+
+            return saved;
         });
     }
 }

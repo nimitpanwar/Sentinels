@@ -18,10 +18,12 @@
  *     staleness in the *baseline* only.
  *   - activeRules: the 'rules' table, read on every single transaction
  *     evaluation (see RiskEngine/RuleRepository). Rules only change when an
- *     operator edits one, so a 1-minute TTL is safe. NOTE: if/when a
- *     RuleController is added with update/delete endpoints, those should
- *     evict this cache (@CacheEvict("activeRules")) so edits take effect
- *     immediately instead of waiting out the TTL.
+ *     operator edits one, so a 1-minute TTL is safe. RuleController evicts
+ *     this cache (@CacheEvict("activeRules")) on every create/update/delete
+ *     so edits take effect immediately instead of waiting out the TTL.
+ *   - alertSettings: the single alert_settings row (severity bands, alert
+ *     threshold, merge cooldown - see AlertConfig/AlertSettingsController).
+ *     Same reasoning as activeRules: rarely changes, short TTL, evicted on update.
  */
 package com.example.config;
 
@@ -54,8 +56,27 @@ public class CacheConfig {
                         .expireAfterWrite(60, TimeUnit.SECONDS)
                         .build());
 
+        // Reference data looked up on every transaction creation - changes
+        // rarely (new account/payee onboarding), so a longer TTL is safe.
+        CaffeineCache accounts = new CaffeineCache("accounts",
+                Caffeine.newBuilder()
+                        .maximumSize(10_000)
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .build());
+        CaffeineCache payees = new CaffeineCache("payees",
+                Caffeine.newBuilder()
+                        .maximumSize(10_000)
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .build());
+
+        CaffeineCache alertSettings = new CaffeineCache("alertSettings",
+                Caffeine.newBuilder()
+                        .maximumSize(1)
+                        .expireAfterWrite(60, TimeUnit.SECONDS)
+                        .build());
+
         SimpleCacheManager manager = new SimpleCacheManager();
-        manager.setCaches(List.of(historicalProfile, activeRules));
+        manager.setCaches(List.of(historicalProfile, activeRules, accounts, payees, alertSettings));
         return manager;
     }
 }

@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the 'alerts' table - one row per transaction that crossed
@@ -16,7 +17,8 @@ import java.time.LocalDateTime;
 @Table(
     name = "alerts",
     indexes = {
-        @Index(name = "idx_alert_case_created", columnList = "case_id, created_at")
+        @Index(name = "idx_alert_case_created", columnList = "case_id, created_at"),
+        @Index(name = "idx_alert_transaction", columnList = "transaction_id")
     }
 )
 public class Alert {
@@ -63,7 +65,7 @@ public class Alert {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

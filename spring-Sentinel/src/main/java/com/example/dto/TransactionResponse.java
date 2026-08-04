@@ -44,14 +44,6 @@ public class TransactionResponse {
     private String location;
     private String merchantCategory;
 
-    // ---- Display fields: denormalised from Account/Customer/Payee (no extra DB queries; eager-loaded) ----
-    private String accountNumber;
-    private String accountType;
-    private String accountStatus;
-    private String customerName;
-    private String payeeName;
-    private String payeeIdentifier;
-
     // ---- Risk engine / alert manager output, populated synchronously after evaluation ----
     private Integer riskScore;
     private List<String> triggeredRules;
@@ -87,18 +79,6 @@ public class TransactionResponse {
     public void setLocation(String location) { this.location = location; }
     public String getMerchantCategory() { return merchantCategory; }
     public void setMerchantCategory(String merchantCategory) { this.merchantCategory = merchantCategory; }
-    public String getAccountNumber() { return accountNumber; }
-    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
-    public String getAccountType() { return accountType; }
-    public void setAccountType(String accountType) { this.accountType = accountType; }
-    public String getAccountStatus() { return accountStatus; }
-    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) { this.customerName = customerName; }
-    public String getPayeeName() { return payeeName; }
-    public void setPayeeName(String payeeName) { this.payeeName = payeeName; }
-    public String getPayeeIdentifier() { return payeeIdentifier; }
-    public void setPayeeIdentifier(String payeeIdentifier) { this.payeeIdentifier = payeeIdentifier; }
     public Integer getRiskScore() { return riskScore; }
     public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
     public List<String> getTriggeredRules() { return triggeredRules; }
@@ -138,12 +118,6 @@ public class TransactionResponse {
         public Builder createdAt(LocalDateTime createdAt) { resp.createdAt = createdAt; return this; }
         public Builder location(String location) { resp.location = location; return this; }
         public Builder merchantCategory(String merchantCategory) { resp.merchantCategory = merchantCategory; return this; }
-        public Builder accountNumber(String accountNumber) { resp.accountNumber = accountNumber; return this; }
-        public Builder accountType(String accountType) { resp.accountType = accountType; return this; }
-        public Builder accountStatus(String accountStatus) { resp.accountStatus = accountStatus; return this; }
-        public Builder customerName(String customerName) { resp.customerName = customerName; return this; }
-        public Builder payeeName(String payeeName) { resp.payeeName = payeeName; return this; }
-        public Builder payeeIdentifier(String payeeIdentifier) { resp.payeeIdentifier = payeeIdentifier; return this; }
         public Builder riskScore(Integer riskScore) { resp.riskScore = riskScore; return this; }
         public Builder triggeredRules(List<String> triggeredRules) { resp.triggeredRules = triggeredRules; return this; }
         public Builder evidence(List<String> evidence) { resp.evidence = evidence; return this; }

@@ -12,7 +12,9 @@ import java.math.BigDecimal;
  *
  * Field re-use per rule type (documented since one column serves double duty):
  *  - AMOUNT_ANOMALY:   thresholdValue = z-score threshold (e.g. 3.00)
- *  - VELOCITY:         thresholdValue = transaction count threshold; timeline = lookback window in days
+ *  - AMOUNT_THRESHOLD: thresholdValue = flat dollar limit (e.g. 10000.00) - a single transaction
+ *                      above this amount triggers, independent of account history
+ *  - VELOCITY:         thresholdValue = transaction count threshold; timeline = lookback window in minutes
  *  - NEW_PAYEE:        thresholdValue = normalized risk score (0-1) contributed when triggered
  *  - TIME_ANOMALY:     thresholdValue = normalized risk score (0-1) contributed when triggered
  *  - LOCATION_CHANGE:  thresholdValue = normalized risk score (0-1) contributed when triggered

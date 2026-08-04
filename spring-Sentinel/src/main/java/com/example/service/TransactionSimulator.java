@@ -92,17 +92,6 @@ public class TransactionSimulator {
             "Utility payment", "Insurance premium"
     );
 
-    private static final List<String> MERCHANT_CATEGORIES = List.of(
-            "Groceries", "Restaurant", "Gas Station", "Electronics", "Clothing",
-            "Healthcare", "Travel", "Entertainment", "Home Improvement", "Online Retail"
-    );
-
-    private static final List<String> LOCATIONS = List.of(
-            "New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX",
-            "Phoenix, AZ", "Philadelphia, PA", "San Antonio, TX", "San Diego, CA",
-            "Dallas, TX", "San Jose, CA"
-    );
-
     @PostConstruct
     public void init() {
         running.set(enabledByDefault);
@@ -111,18 +100,27 @@ public class TransactionSimulator {
 
     @Scheduled(fixedDelayString = "${simulator.interval-ms:3000}")
     public void generateTransaction() {
-        if (!running.get()) return;
-        if (!refreshPoolsIfNeeded()) return; // no seeded accounts/payees yet
+        // This runs on Spring's scheduler thread with no caller to catch a
+        // thrown exception - without this try/catch, one failed tick (e.g. a
+        // transient DB error) would only be logged by Spring's default
+        // scheduled-task error logging, so we handle it explicitly here to
+        // guarantee the simulator keeps ticking on the next fixed-delay run.
+        try {
+            if (!running.get()) return;
+            if (!refreshPoolsIfNeeded()) return; // no seeded accounts/payees yet
 
-        if (random.nextDouble() < scenarioProbability) {
-            int scenario = random.nextInt(3);
-            switch (scenario) {
-                case 0 -> triggerVelocityScenario();
-                case 1 -> triggerHighValueScenario();
-                case 2 -> triggerNewPayeeScenario();
+            if (random.nextDouble() < scenarioProbability) {
+                int scenario = random.nextInt(3);
+                switch (scenario) {
+                    case 0 -> triggerVelocityScenario();
+                    case 1 -> triggerHighValueScenario();
+                    case 2 -> triggerNewPayeeScenario();
+                }
+            } else {
+                generateRandomTransaction();
             }
-        } else {
-            generateRandomTransaction();
+        } catch (Exception ex) {
+            log.error("Simulator tick failed, will retry on next scheduled run: {}", ex.getMessage(), ex);
         }
     }
 
@@ -159,8 +157,6 @@ public class TransactionSimulator {
             req.setCurrency("USD");
             req.setType(TransactionType.DEBIT);
             req.setDescription("Velocity test tx-" + (i + 1));
-            req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-            req.setLocation(randomFrom(LOCATIONS));
             transactionService.createTransaction(req, TransactionSource.SIMULATOR);
         }
     }
@@ -177,8 +173,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
         req.setDescription("High-value transfer");
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
         transactionService.createTransaction(req, TransactionSource.SIMULATOR);
     }
 
@@ -197,8 +191,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(TransactionType.DEBIT);
         req.setDescription("First-time payee transaction");
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
         transactionService.createTransaction(req, TransactionSource.SIMULATOR);
     }
 
@@ -227,8 +219,6 @@ public class TransactionSimulator {
         req.setCurrency("USD");
         req.setType(random.nextBoolean() ? TransactionType.DEBIT : TransactionType.CREDIT);
         req.setDescription(randomFrom(DESCRIPTIONS));
-        req.setMerchantCategory(randomFrom(MERCHANT_CATEGORIES));
-        req.setLocation(randomFrom(LOCATIONS));
 
         // Weighted distribution: 70% small, 25% medium, 5% large
         double roll = random.nextDouble();

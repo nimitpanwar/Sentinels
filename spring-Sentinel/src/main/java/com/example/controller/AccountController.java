@@ -4,6 +4,7 @@ import com.example.dto.AccountRequest;
 import com.example.entity.Account;
 import com.example.entity.Customer;
 import com.example.entity.Transaction;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.AccountRepository;
 import com.example.repository.CustomerRepository;
 import com.example.repository.TransactionRepository;
@@ -32,7 +33,7 @@ public class AccountController {
     @PostMapping
     public ResponseEntity<Account> create(@RequestBody AccountRequest request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + request.getCustomerId()));
 
         Account account = new Account();
         account.setCustomer(customer);

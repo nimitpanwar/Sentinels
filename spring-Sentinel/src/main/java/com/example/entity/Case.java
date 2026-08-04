@@ -1,11 +1,13 @@
 package com.example.entity;
 
 import com.example.enums.CaseStatus;
+import com.example.enums.ResolutionReasonCode;
 import com.example.enums.Severity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the 'cases' table - the investigation unit an analyst
@@ -56,8 +58,29 @@ public class Case {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    // Set the first time this case is acknowledged (see AlertManager.updateCaseStatus).
+    // Used to compute "average time to acknowledge" for the stats endpoint.
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
+
+    // Structured counterpart to resolutionNotes, set only when status becomes
+    // CLOSED/DISMISSED (see AlertManager.updateCaseStatus). Distinguishes
+    // "confirmed fraud" from other resolutions without parsing free text -
+    // consumed by the network-analysis job to seed personalized PageRank.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resolution_reason_code", length = 40)
+    private ResolutionReasonCode resolutionReasonCode;
+
+    // Denormalized copy of this case's most recent alert's createdAt, kept in
+    // sync by AlertManager on every merge/create. Lets isWithinMergeWindow()
+    // do a plain in-memory comparison instead of a separate DB query per
+    // candidate case - safe because it's written in the SAME transaction/
+    // commit as the rest of the case row (no atomicity gap introduced).
+    @Column(name = "last_alert_at")
+    private LocalDateTime lastAlertAt;
 
     public Case() {
     }
@@ -65,7 +88,7 @@ public class Case {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 
@@ -85,6 +108,12 @@ public class Case {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getClosedAt() { return closedAt; }
     public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+    public LocalDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+    public ResolutionReasonCode getResolutionReasonCode() { return resolutionReasonCode; }
+    public void setResolutionReasonCode(ResolutionReasonCode resolutionReasonCode) { this.resolutionReasonCode = resolutionReasonCode; }
+    public LocalDateTime getLastAlertAt() { return lastAlertAt; }
+    public void setLastAlertAt(LocalDateTime lastAlertAt) { this.lastAlertAt = lastAlertAt; }
 }

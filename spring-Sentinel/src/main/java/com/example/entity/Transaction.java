@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * JPA entity for the real 'transactions' table (final relational schema
@@ -71,10 +72,10 @@ public class Transaction {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneOffset.UTC);
         }
         if (transactionTimestamp == null) {
-            transactionTimestamp = LocalDateTime.now();
+            transactionTimestamp = LocalDateTime.now(ZoneOffset.UTC);
         }
     }
 

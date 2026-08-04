@@ -27,6 +27,7 @@
  */
 package com.example.service;
 
+import com.example.dto.TransactionFilter;
 import com.example.dto.TransactionRequest;
 import com.example.dto.TransactionResponse;
 import com.example.entity.Account;
@@ -36,21 +37,25 @@ import com.example.enums.TransactionSource;
 import com.example.enums.TransactionStatus;
 import com.example.entity.RuleEvaluation;
 import com.example.event.TransactionCreatedEvent;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.AccountRepository;
 import com.example.repository.AlertRepository;
 import com.example.repository.PayeeRepository;
 import com.example.repository.RuleEvaluationRepository;
 import com.example.repository.TransactionRepository;
+import com.example.repository.TransactionSpecifications;
 import com.example.riskengine.service.EvaluationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 // NOTE: Lombok (@Slf4j/@RequiredArgsConstructor) intentionally not used - see entity/Transaction.java note.
@@ -80,9 +85,9 @@ public class TransactionService {
     @Transactional
     public TransactionResponse createTransaction(TransactionRequest request, TransactionSource source) {
         Account account = accountRepository.findById(request.getAccountId())
-                .orElseThrow(() -> new RuntimeException("Account not found: " + request.getAccountId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + request.getAccountId()));
         Payee payee = payeeRepository.findById(request.getPayeeId())
-                .orElseThrow(() -> new RuntimeException("Payee not found: " + request.getPayeeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Payee not found: " + request.getPayeeId()));
 
         Transaction tx = Transaction.builder()
                 .account(account)
@@ -90,7 +95,7 @@ public class TransactionService {
                 .amount(request.getAmount())
                 .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
                 .type(request.getType())
-                .transactionTimestamp(LocalDateTime.now())
+                .transactionTimestamp(LocalDateTime.now(ZoneOffset.UTC))
                 .status(TransactionStatus.COMPLETED)
                 .description(request.getDescription())
                 .location(request.getLocation())
@@ -111,26 +116,35 @@ public class TransactionService {
         return toResponse(saved, null);
     }
 
+    /**
+     * Paginated, filterable transaction listing (Appendix C "Transactions
+     * List Screen" - filter by date range/account/amount range, search by
+     * ID or description, sort by any column via Pageable). Filters are
+     * combined with AND; any null field in {@code filter} means "no
+     * constraint on that field".
+     */
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getAllTransactions(Pageable pageable) {
-        return transactionRepository.findAllByOrderByTransactionTimestampDesc(pageable)
-                .map(this::toResponseWithStoredEvaluation);
-    }
+    public Page<TransactionResponse> getTransactions(TransactionFilter filter, Pageable pageable) {
+        Specification<Transaction> spec = Specification
+                .where(TransactionSpecifications.hasAccountId(filter.accountId()))
+                .and(TransactionSpecifications.hasPayeeId(filter.payeeId()))
+                .and(TransactionSpecifications.hasStatus(filter.status()))
+                .and(TransactionSpecifications.hasType(filter.type()))
+                .and(TransactionSpecifications.amountAtLeast(filter.minAmount()))
+                .and(TransactionSpecifications.amountAtMost(filter.maxAmount()))
+                .and(TransactionSpecifications.timestampFrom(filter.from()))
+                .and(TransactionSpecifications.timestampTo(filter.to()))
+                .and(TransactionSpecifications.search(filter.search()));
 
-    /** Non-paginated overload kept for internal use (e.g. tests, single-row paths). */
-    @Transactional(readOnly = true)
-    public List<TransactionResponse> getAllTransactions() {
-        return transactionRepository.findAll()
-                .stream()
-                .map(this::toResponseWithStoredEvaluation)
-                .toList();
+        return transactionRepository.findAll(spec, pageable)
+                .map(this::toResponseWithStoredEvaluation);
     }
 
     @Transactional(readOnly = true)
     public TransactionResponse getTransactionById(Integer id) {
         return transactionRepository.findById(id)
                 .map(this::toResponseWithStoredEvaluation)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + id));
     }
 
     /**
@@ -143,48 +157,62 @@ public class TransactionService {
      * evaluation had completed - that was the bug.
      */
     private TransactionResponse toResponseWithStoredEvaluation(Transaction tx) {
-        // ── RISK & ALERT POPULATION COMMENTED OUT ──────────────────────────────────
-        // To restore: uncomment the block below and remove the direct toResponse call.
-        //
-        // List<RuleEvaluation> evaluations = ruleEvaluationRepository.findByTransactionTransactionId(tx.getTransactionId());
-        // if (evaluations.isEmpty()) {
-        //     return toResponse(tx, null);
-        // }
-        // double weightedSum = 0.0;
-        // double totalWeight = 0.0;
-        // List<String> triggeredRuleNames = evaluations.stream()
-        //         .filter(RuleEvaluation::isTriggered)
-        //         .map(e -> e.getRule().getRuleType().name())
-        //         .toList();
-        // List<String> evidence = evaluations.stream()
-        //         .filter(RuleEvaluation::isTriggered)
-        //         .map(RuleEvaluation::getReason)
-        //         .toList();
-        // for (RuleEvaluation e : evaluations) {
-        //     if (e.isTriggered()) {
-        //         double weight = e.getRule().getWeight().doubleValue();
-        //         weightedSum += e.getRiskScore().doubleValue() * weight;
-        //         totalWeight += weight;
-        //     }
-        // }
-        // int riskScore = totalWeight == 0 ? 0 : (int) Math.round((weightedSum / totalWeight) * 100);
-        // TransactionResponse.Builder builder = TransactionResponse.builder()
-        //         .transactionId(tx.getTransactionId()) ...
-        //         .riskScore(riskScore).triggeredRules(triggeredRuleNames).evidence(evidence);
-        // applyDisplayFields(builder, tx);
-        // alertRepository.findByTransactionTransactionId(tx.getTransactionId()).ifPresent(alert -> {
-        //     builder.alertId(alert.getAlertId())
-        //             .alertSeverity(alert.getSeverity() != null ? alert.getSeverity().name() : null)
-        //             .alertStatus(alert.getStatus() != null ? alert.getStatus().name() : null);
-        //     if (alert.getCase() != null) {
-        //         builder.caseId(alert.getCase().getCaseId())
-        //                 .caseSeverity(...).caseStatus(...);
-        //     }
-        // });
-        // return builder.build();
-        // ── END RISK & ALERT BLOCK ─────────────────────────────────────────────────
+        List<RuleEvaluation> evaluations = ruleEvaluationRepository.findByTransactionTransactionId(tx.getTransactionId());
+        if (evaluations.isEmpty()) {
+            // Async evaluation hasn't run yet (or produced nothing) - not a bug,
+            // just means the background listener hasn't picked it up yet.
+            return toResponse(tx, null);
+        }
 
-        return toResponse(tx, null);
+        double weightedSum = 0.0;
+        double totalWeight = 0.0;
+        List<String> triggeredRuleNames = evaluations.stream()
+                .filter(RuleEvaluation::isTriggered)
+                .map(e -> e.getRule().getRuleType().name())
+                .toList();
+        List<String> evidence = evaluations.stream()
+                .filter(RuleEvaluation::isTriggered)
+                .map(RuleEvaluation::getReason)
+                .toList();
+        for (RuleEvaluation e : evaluations) {
+            if (e.isTriggered()) {
+                double weight = e.getRule().getWeight().doubleValue();
+                weightedSum += e.getRiskScore().doubleValue() * weight;
+                totalWeight += weight;
+            }
+        }
+        int riskScore = totalWeight == 0 ? 0 : (int) Math.round((weightedSum / totalWeight) * 100);
+
+        TransactionResponse.Builder builder = TransactionResponse.builder()
+                .transactionId(tx.getTransactionId())
+                .accountId(tx.getAccountId())
+                .payeeId(tx.getPayeeId())
+                .amount(tx.getAmount())
+                .currency(tx.getCurrency())
+                .type(tx.getType())
+                .transactionTimestamp(tx.getTransactionTimestamp())
+                .status(tx.getStatus())
+                .description(tx.getDescription())
+                .createdAt(tx.getCreatedAt())
+                .location(tx.getLocation())
+                .merchantCategory(tx.getMerchantCategory())
+                .riskScore(riskScore)
+                .triggeredRules(triggeredRuleNames)
+                .evidence(evidence);
+
+        alertRepository.findByTransactionTransactionId(tx.getTransactionId()).ifPresent(alert -> {
+            builder.alertId(alert.getAlertId())
+                    .alertSeverity(alert.getSeverity() != null ? alert.getSeverity().name() : null)
+                    .alertStatus(alert.getStatus() != null ? alert.getStatus().name() : null);
+
+            if (alert.getCase() != null) {
+                builder.caseId(alert.getCase().getCaseId())
+                        .caseSeverity(alert.getCase().getSeverity() != null ? alert.getCase().getSeverity().name() : null)
+                        .caseStatus(alert.getCase().getStatus() != null ? alert.getCase().getStatus().name() : null);
+            }
+        });
+
+        return builder.build();
     }
 
     private TransactionResponse toResponse(Transaction tx, EvaluationOutcome outcome) {
@@ -201,8 +229,6 @@ public class TransactionService {
                 .createdAt(tx.getCreatedAt())
                 .location(tx.getLocation())
                 .merchantCategory(tx.getMerchantCategory());
-
-        applyDisplayFields(builder, tx);
 
         if (outcome != null) {
             builder.riskScore(outcome.getRiskResult().getRiskScore())
@@ -225,26 +251,6 @@ public class TransactionService {
         }
 
         return builder.build();
-    }
-
-    /**
-     * Copies the eagerly-loaded Account/Customer/Payee display fields into the
-     * builder. The relations are EAGER so no extra DB queries happen here.
-     */
-    private void applyDisplayFields(TransactionResponse.Builder builder, Transaction tx) {
-        if (tx.getAccount() != null) {
-            Account acct = tx.getAccount();
-            builder.accountNumber(acct.getAccountNumber())
-                   .accountType(acct.getAccountType() != null ? acct.getAccountType().name() : null)
-                   .accountStatus(acct.getStatus() != null ? acct.getStatus().name() : null);
-            if (acct.getCustomer() != null) {
-                builder.customerName(acct.getCustomer().getFirstName() + " " + acct.getCustomer().getLastName());
-            }
-        }
-        if (tx.getPayee() != null) {
-            builder.payeeName(tx.getPayee().getPayeeName())
-                   .payeeIdentifier(tx.getPayee().getPayeeIdentifier());
-        }
     }
 }
 

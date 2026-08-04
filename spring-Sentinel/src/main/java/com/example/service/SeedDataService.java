@@ -63,12 +63,21 @@ public class SeedDataService {
                 .build());
 
         ruleRepository.save(Rule.builder()
+                .ruleName("Amount Threshold")
+                .ruleType(RuleType.AMOUNT_THRESHOLD)
+                .active(true)
+                .weight(new BigDecimal("1.000"))
+                .thresholdValue(new BigDecimal("10000.00"))
+                .timeline(30)
+                .build());
+
+        ruleRepository.save(Rule.builder()
                 .ruleName("Velocity Check")
                 .ruleType(RuleType.VELOCITY)
                 .active(true)
                 .weight(new BigDecimal("1.000"))
                 .thresholdValue(new BigDecimal("5.00"))
-                .timeline(1)
+                .timeline(10)
                 .build());
 
         ruleRepository.save(Rule.builder()
@@ -116,7 +125,7 @@ public class SeedDataService {
                 .timeline(30)
                 .build());
 
-        log.info("Seeded 7 rows into 'rules' table");
+        log.info("Seeded 8 rows into 'rules' table");
     }
 
     private void seedCustomersAccountsPayees() {
