@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Complete HTML & CSS Tutorial</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+
+        <h1>Welcome to HTML & CSS Masterclass</h1>
+
+        <p>Learn HTML and CSS using one complete webpage.</p>
+
+    </header>
+
+    <!-- ================= NAVIGATION ================= -->
+
+    <nav>
+
+        <a href="#">Home</a>
+        <a href="#">Courses</a>
+        <a href="#">Gallery</a>
+        <a href="#">Contact</a>
+
+    </nav>
+
+    <!-- ================= HERO SECTION ================= -->
+
+    <section class="hero">
+
+        <h2>Become a Front-End Developer</h2>
+
+        <p>
+
+            HTML provides the structure while CSS makes everything beautiful.
+
+        </p>
+
+        <button>Join Now</button>
+
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+
+    <section>
+
+        <h2>About HTML</h2>
+
+        <p>
+
+            HTML stands for HyperText Markup Language.
+
+            It defines the structure of web pages.
+
+        </p>
+
+        <p>
+
+            CSS stands for Cascading Style Sheets.
+
+            It controls the appearance of HTML elements.
+
+        </p>
+
+    </section>
+
+    <!-- ================= LIST EXAMPLES ================= -->
+
+    <section>
+
+        <h2>Programming Languages</h2>
+
+        <ul>
+
+            <li>Java</li>
+            <li>Python</li>
+            <li>JavaScript</li>
+            <li>Go</li>
+
+        </ul>
+
+        <h2>Learning Steps</h2>
+
+        <ol>
+
+            <li>Learn HTML</li>
+            <li>Learn CSS</li>
+            <li>Learn JavaScript</li>
+            <li>Build Projects</li>
+
+        </ol>
+
+    </section>
+
+    <!-- ================= IMAGE ================= -->
+
+    <section>
+
+        <h2>Image Example</h2>
+
+        <img src="images/laptop.jpg" alt="Laptop">
+
+    </section>
+
+    <!-- ================= TABLE ================= -->
+
+    <section>
+
+        <h2>Course Schedule</h2>
+
+        <table>
+
+            <tr>
+
+                <th>Day</th>
+                <th>Topic</th>
+                <th>Duration</th>
+
+            </tr>
+
+            <tr>
+
+                <td>Day 1</td>
+                <td>HTML</td>
+                <td>6 Hours</td>
+
+            </tr>
+
+            <tr>
+
+                <td>Day 2</td>
+                <td>CSS</td>
+                <td>6 Hours</td>
+
+            </tr>
+
+            <tr>
+
+                <td>Day 3</td>
+                <td>JavaScript</td>
+                <td>8 Hours</td>
+
+            </tr>
+
+        </table>
+
+    </section>
+
+    <!-- ================= FORM ================= -->
+
+    <section>
+
+        <h2>Registration Form</h2>
+
+        <form>
+
+            <label>Name</label>
+
+            <input type="text" placeholder="Enter Name">
+
+            <label>Email</label>
+
+            <input type="email" placeholder="Enter Email">
+
+            <label>Password</label>
+
+            <input type="password">
+
+            <label>Gender</label>
+
+            <input type="radio" name="gender"> Male
+
+            <input type="radio" name="gender"> Female
+
+            <br><br>
+
+            <label>Skills</label>
+
+            <input type="checkbox"> HTML
+
+            <input type="checkbox"> CSS
+
+            <input type="checkbox"> JavaScript
+
+            <br><br>
+
+            <label>Country</label>
+
+            <select>
+
+                <option>India</option>
+                <option>USA</option>
+                <option>Canada</option>
+
+            </select>
+
+            <br><br>
+
+            <textarea rows="5" cols="40"></textarea>
+
+            <br><br>
+
+            <button>Submit</button>
+
+        </form>
+
+    </section>
+
+    <!-- ================= FLEXBOX ================= -->
+
+    <section>
+
+        <h2>Popular Courses</h2>
+
+        <div class="container">
+
+            <div class="card">
+
+                <h3>HTML</h3>
+
+                <p>Build webpage structure.</p>
+
+            </div>
+
+            <div class="card">
+
+                <h3>CSS</h3>
+
+                <p>Design beautiful websites.</p>
+
+            </div>
+
+            <div class="card">
+
+                <h3>JavaScript</h3>
+
+                <p>Add interactivity.</p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ================= GRID ================= -->
+
+    <section>
+
+        <h2>Photo Gallery</h2>
+
+        <div class="gallery">
+
+            <div class="box">1</div>
+            <div class="box">2</div>
+            <div class="box">3</div>
+            <div class="box">4</div>
+            <div class="box">5</div>
+            <div class="box">6</div>
+
+        </div>
+
+    </section>
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        Copyright © 2026 HTML Tutorial
+
+    </footer>
+
+</body>
+
+</html>
+-----------------CSS-------------
+/* ======================
+   UNIVERSAL SELECTOR
+====================== */
+
+*{
+
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+
+}
+
+/* ======================
+   BODY
+====================== */
+
+body{
+
+    font-family:Arial;
+    background:#f4f4f4;
+    line-height:1.6;
+
+}
+
+/* ======================
+   HEADER
+====================== */
+
+header{
+
+    background:#1e3a8a;
+    color:white;
+    text-align:center;
+    padding:40px;
+
+}
+
+header h1{
+
+    font-size:40px;
+
+}
+
+header p{
+
+    margin-top:10px;
+
+}
+
+/* ======================
+   NAVIGATION
+====================== */
+
+nav{
+
+    background:#333;
+    text-align:center;
+    padding:15px;
+
+}
+
+nav a{
+
+    color:white;
+    text-decoration:none;
+    margin:20px;
+    font-size:20px;
+
+}
+
+nav a:hover{
+
+    color:yellow;
+
+}
+
+/* ======================
+   HERO
+====================== */
+
+.hero{
+
+    text-align:center;
+    padding:60px;
+    background:linear-gradient(to right,#4facfe,#00f2fe);
+
+}
+
+.hero h2{
+
+    font-size:40px;
+
+}
+
+.hero p{
+
+    margin:20px;
+
+}
+
+button{
+
+    padding:12px 30px;
+    background:#1e3a8a;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+
+}
+
+button:hover{
+
+    background:red;
+
+}
+
+/* ======================
+   GENERAL SECTION
+====================== */
+
+section{
+
+    background:white;
+    margin:20px;
+    padding:25px;
+    border-radius:10px;
+
+}
+
+/* ======================
+   IMAGE
+====================== */
+
+img{
+
+    width:400px;
+    border-radius:10px;
+    border:5px solid gray;
+
+}
+
+/* ======================
+   TABLE
+====================== */
+
+table{
+
+    width:100%;
+    border-collapse:collapse;
+
+}
+
+table,
+th,
+td{
+
+    border:1px solid gray;
+
+}
+
+th{
+
+    background:#1e3a8a;
+    color:white;
+
+}
+
+th,
+td{
+
+    padding:15px;
+    text-align:center;
+
+}
+
+tr:nth-child(even){
+
+    background:#eee;
+
+}
+
+/* ======================
+   FORM
+====================== */
+
+input,
+select,
+textarea{
+
+    width:100%;
+    padding:10px;
+    margin-bottom:15px;
+
+}
+
+/* ======================
+   FLEXBOX
+====================== */
+
+.container{
+
+    display:flex;
+    justify-content:space-around;
+    gap:20px;
+    flex-wrap:wrap;
+
+}
+
+.card{
+
+    width:250px;
+    background:#ddd;
+    padding:20px;
+    border-radius:10px;
+    text-align:center;
+    transition:0.5s;
+
+}
+
+.card:hover{
+
+    transform:scale(1.1);
+    background:orange;
+
+}
+
+/* ======================
+   GRID
+====================== */
+
+.gallery{
+
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+
+}
+
+.box{
+
+    background:#4facfe;
+    color:white;
+    font-size:30px;
+    text-align:center;
+    padding:50px;
+
+}
+
+/* ======================
+FOOTER
+====================== */
+
+footer{
+
+    background:#333;
+    color:white;
+    text-align:center;
+    padding:30px;
+    margin-top:20px;
+
+}

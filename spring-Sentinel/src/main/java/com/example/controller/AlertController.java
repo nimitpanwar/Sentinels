@@ -1,8 +1,10 @@
 package com.example.controller;
 
 import com.example.entity.Alert;
+import com.example.entity.RuleEvaluation;
 import com.example.enums.CaseStatus;
 import com.example.repository.AlertRepository;
+import com.example.repository.RuleEvaluationRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,9 +26,11 @@ import java.util.Set;
 public class AlertController {
 
     private final AlertRepository alertRepository;
+    private final RuleEvaluationRepository ruleEvaluationRepository;
 
-    public AlertController(AlertRepository alertRepository) {
+    public AlertController(AlertRepository alertRepository, RuleEvaluationRepository ruleEvaluationRepository) {
         this.alertRepository = alertRepository;
+        this.ruleEvaluationRepository = ruleEvaluationRepository;
     }
 
     @GetMapping
@@ -39,6 +43,18 @@ public class AlertController {
         return alertRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Returns the rule evaluation audit rows for the transaction that triggered this alert.
+     * Each row represents one rule that was evaluated (triggered or not), with its score and reason.
+     */
+    @GetMapping("/{id}/evaluations")
+    public ResponseEntity<List<RuleEvaluation>> getEvaluations(@PathVariable Integer id) {
+        return alertRepository.findById(id).map(alert -> {
+            Integer txId = alert.getTransaction().getTransactionId();
+            return ResponseEntity.ok(ruleEvaluationRepository.findByTransactionTransactionId(txId));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**

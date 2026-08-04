@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchAlert, updateAlertStatus } from '../../api/alertsApi';
+import {
+  fetchAlert, updateAlertStatus,
+  fetchAlertEvaluations, fetchCaseAlerts, fetchRecentAccountTransactions,
+} from '../../api/alertsApi';
 import './alerts.css';
 import '../transactions/transactions.css';
 
@@ -42,16 +45,22 @@ function fmtAmount(amount) {
 export default function AlertDetailPage({ updateAlert }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [alert, setAlert]           = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
+  const [alert, setAlert]             = useState(null);
+  const [evaluations, setEvaluations] = useState([]);
+  const [caseAlerts, setCaseAlerts]   = useState([]);
+  const [recentTx, setRecentTx]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
   const [actionError, setActionError] = useState(null);
-  const [working, setWorking]       = useState(false);
+  const [working, setWorking]         = useState(false);
 
   // Dismiss modal state
   const [showDismiss, setShowDismiss] = useState(false);
   const [dismissNotes, setDismissNotes] = useState('');
   const notesRef = useRef(null);
+
+  // Sibling alert popup
+  const [selectedSibling, setSelectedSibling] = useState(null);
 
   useEffect(() => {
     fetchAlert(id)
@@ -63,7 +72,22 @@ export default function AlertDetailPage({ updateAlert }) {
         }
         return data;
       })
-      .then(setAlert)
+      .then(alertData => {
+        setAlert(alertData);
+        const txId   = alertData.transaction?.transactionId;
+        const acctId = alertData.transaction?.account?.accountId;
+        const caseId = alertData.case?.caseId;
+
+        // Parallel fetch of supplementary data
+        const p1 = fetchAlertEvaluations(id).then(setEvaluations).catch(() => {});
+        const p2 = acctId
+          ? fetchRecentAccountTransactions(acctId, 10).then(setRecentTx).catch(() => {})
+          : Promise.resolve();
+        const p3 = caseId
+          ? fetchCaseAlerts(caseId).then(setCaseAlerts).catch(() => {})
+          : Promise.resolve();
+        return Promise.all([p1, p2, p3]);
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
@@ -112,7 +136,7 @@ export default function AlertDetailPage({ updateAlert }) {
             {statusBadge(alert.status)}
           </div>
 
-          {/* ── Cards row ── */}
+          {/* ── Cards row 1: Alert Info + Transaction ── */}
           <div className="alert-detail-cards">
 
             {/* Alert info */}
@@ -144,6 +168,99 @@ export default function AlertDetailPage({ updateAlert }) {
                 <dt>Location</dt>    <dd>{tx.location ?? '—'}</dd>
               </dl>
             </div>
+
+            {/* ── Rule Evaluations — full width ── */}
+            {evaluations.length > 0 && (
+              <div className="alert-detail-card alert-detail-card--full">
+                <h2 className="alert-detail-card-title">Rule Evaluations</h2>
+                <table className="eval-table">
+                  <thead>
+                    <tr>
+                      <th>Rule</th>
+                      <th>Triggered</th>
+                      <th className="num">Score</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evaluations.map(e => (
+                      <tr key={e.evaluationId} className={e.triggered ? 'eval-triggered' : ''}>
+                        <td>{e.rule?.ruleName ?? e.rule?.ruleType ?? '—'}</td>
+                        <td>{e.triggered
+                          ? <span className="badge badge--high">Yes</span>
+                          : <span className="badge badge--closed">No</span>}
+                        </td>
+                        <td className="num">{e.riskScore != null ? parseFloat(e.riskScore).toFixed(3) : '—'}</td>
+                        <td style={{ color: '#6b7280', fontSize: '0.78rem' }}>{e.reason ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Case Summary ── */}
+            {alert.case && (
+              <div className="alert-detail-card">
+                <h2 className="alert-detail-card-title">Case</h2>
+                <dl className="alert-detail-dl" style={{ marginBottom: 12 }}>
+                  <dt>Case ID</dt>    <dd className="mono">#{alert.case.caseId}</dd>
+                  <dt>Severity</dt>   <dd>{severityBadge(alert.case.severity)}</dd>
+                  <dt>Status</dt>     <dd>{statusBadge(alert.case.status)}</dd>
+                  <dt>Risk Score</dt> <dd className="num">{alert.case.riskScore ?? '—'}</dd>
+                </dl>
+                {caseAlerts.length > 1 && (
+                  <>
+                    <div className="alert-detail-card-title" style={{ marginBottom: 6 }}>
+                      Alerts in this case ({caseAlerts.length})
+                    </div>
+                    <ul className="case-alerts-list">
+                      {caseAlerts.map(ca => (
+                        <li
+                          key={ca.alertId}
+                          className={`case-alert-item ${ca.alertId === alert.alertId ? 'case-alert-item--current' : ''}`}
+                          onClick={() => ca.alertId !== alert.alertId && setSelectedSibling(ca)}
+                        >
+                          <span className="case-alert-id">#{ca.alertId}</span>
+                          {statusBadge(ca.status)}
+                          {severityBadge(ca.severity)}
+                          <span className="case-alert-date">{fmtDate(ca.createdAt)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Recent Account Activity ── */}
+            {recentTx.length > 0 && (
+              <div className="alert-detail-card">
+                <h2 className="alert-detail-card-title">Recent Account Activity</h2>
+                <table className="recent-tx-table">
+                  <thead>
+                    <tr>
+                      <th>TX ID</th>
+                      <th className="num">Amount</th>
+                      <th>Payee</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentTx.map(t => (
+                      <tr key={t.transactionId}
+                          className={t.transactionId === tx.transactionId ? 'tx-current' : ''}>
+                        <td className="mono">{t.transactionId}</td>
+                        <td className="num">{fmtAmount(t.amount)}</td>
+                        <td>{t.payee?.payeeName ?? '—'}</td>
+                        <td>{fmtDate(t.transactionTimestamp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
           </div>
 
           {/* ── Actions ── */}
@@ -197,6 +314,59 @@ export default function AlertDetailPage({ updateAlert }) {
           )}
         </>
       )}
+
+      {/* ── Sibling alert popup ── */}
+      {selectedSibling && (() => {
+        const s    = selectedSibling;
+        const stx  = s.transaction ?? {};
+        const sacct = stx.account  ?? {};
+        const spayee = stx.payee   ?? {};
+        return (
+          <div className="dismiss-overlay" onClick={() => setSelectedSibling(null)}>
+            <div className="sibling-popup" onClick={e => e.stopPropagation()}>
+
+              <div className="sibling-popup__header">
+                <div className="sibling-popup__title-row">
+                  <span className="sibling-popup__id">Alert #{s.alertId}</span>
+                  {severityBadge(s.severity)}
+                  {statusBadge(s.status)}
+                </div>
+                <button
+                  className="filter-modal-close"
+                  onClick={() => setSelectedSibling(null)}
+                  aria-label="Close"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+
+              <dl className="alert-detail-dl sibling-popup__dl">
+                <dt>Risk Score</dt>  <dd className="num">{s.riskScore ?? '—'}</dd>
+                <dt>Amount</dt>      <dd className="num">{fmtAmount(stx.amount)}</dd>
+                <dt>Payee</dt>       <dd>{spayee.payeeName ?? '—'}</dd>
+                <dt>Account</dt>     <dd className="mono">{sacct.accountNumber ?? '—'}</dd>
+                <dt>Customer</dt>    <dd>{sacct.customerName ?? '—'}</dd>
+                <dt>Created</dt>     <dd>{fmtDate(s.createdAt)}</dd>
+                <dt>Acknowledged</dt><dd>{fmtDate(s.acknowledgedAt)}</dd>
+              </dl>
+
+              <div className="sibling-popup__footer">
+                <button className="btn btn--ghost" onClick={() => setSelectedSibling(null)}>
+                  Close
+                </button>
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => { setSelectedSibling(null); navigate(`/alerts/${s.alertId}`); }}
+                >
+                  View Full Alert →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
