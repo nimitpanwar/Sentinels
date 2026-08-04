@@ -18,6 +18,18 @@ export default function NavBar() {
         >
           Alerts
         </NavLink>
+        <NavLink
+          to="/overview"
+          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
+        >
+          Overview
+        </NavLink>
+        <NavLink
+          to="/assistant"
+          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
+        >
+          Assistant
+        </NavLink>
       </div>
     </nav>
   );

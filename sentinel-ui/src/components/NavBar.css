@@ -5,20 +5,21 @@
   gap: 32px;
   padding: 0 32px;
   height: 52px;
-  background: #1e293b;
-  color: #f8fafc;
+  background: var(--surface-2);
+  color: var(--text);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  border-bottom: 1px solid var(--border);
 }
 
 .navbar-brand {
   font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #e2e8f0;
+  color: var(--danger);
+  text-shadow: 0 0 14px rgba(255,76,76,0.45);
   user-select: none;
 }
 
@@ -29,20 +30,21 @@
 
 .navbar-link {
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--text-dim);
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
 }
 
 .navbar-link:hover {
-  color: #f1f5f9;
-  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
 }
 
 .navbar-link--active {
-  color: #f1f5f9;
-  background: rgba(255,255,255,0.12);
+  color: var(--text);
+  background: rgba(255,76,76,0.15);
+  border: 1px solid var(--danger);
 }

@@ -4,6 +4,8 @@ import NavBar from './components/NavBar';
 import TransactionsPage from './components/transactions/TransactionsPage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
+import OverviewPage from './components/overview/OverviewPage';
+import ChatbotPage from './components/chatbot/ChatbotPage';
 import { fetchAlerts } from './api/alertsApi';
 
 const STALE_MS = 30_000;
@@ -59,6 +61,8 @@ export default function App() {
         <Route path="/alerts/:id"
           element={<AlertDetailPage updateAlert={updateAlert} />}
         />
+        <Route path="/overview" element={<OverviewPage />} />
+        <Route path="/assistant" element={<ChatbotPage />} />
         <Route path="*" element={<Navigate to="/transactions" replace />} />
       </Routes>
     </>
