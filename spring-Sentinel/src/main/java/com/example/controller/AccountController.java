@@ -3,9 +3,11 @@ package com.example.controller;
 import com.example.dto.AccountRequest;
 import com.example.entity.Account;
 import com.example.entity.Customer;
+import com.example.entity.Transaction;
 import com.example.exception.ResourceNotFoundException;
 import com.example.repository.AccountRepository;
 import com.example.repository.CustomerRepository;
+import com.example.repository.TransactionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +21,13 @@ public class AccountController {
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final TransactionRepository transactionRepository;
 
-    public AccountController(AccountRepository accountRepository, CustomerRepository customerRepository) {
+    public AccountController(AccountRepository accountRepository, CustomerRepository customerRepository,
+                              TransactionRepository transactionRepository) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     @PostMapping
@@ -50,5 +55,15 @@ public class AccountController {
         return accountRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** Most recent transactions for an account. Defaults to last 10; pass ?limit=N to override. */
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<List<Transaction>> getRecentTransactions(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<Transaction> all = transactionRepository
+                .findByAccountAccountIdOrderByTransactionTimestampDesc(id);
+        return ResponseEntity.ok(all.stream().limit(Math.min(limit, 50)).toList());
     }
 }

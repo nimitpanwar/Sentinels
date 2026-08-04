@@ -13,6 +13,8 @@ public enum CaseStatus {
     OPEN,
     ACKNOWLEDGED,
     INVESTIGATING,
-    CLOSED,
-    DISMISSED
+    DISMISSED,
+    IN_REVIEW,
+    ESCALATED,
+    CLOSED
 }

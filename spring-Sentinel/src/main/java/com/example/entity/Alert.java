@@ -50,6 +50,9 @@ public class Alert {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
@@ -80,6 +83,8 @@ public class Alert {
     public void setStatus(CaseStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public LocalDateTime getClosedAt() { return closedAt; }
     public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
     public String getResolutionNotes() { return resolutionNotes; }

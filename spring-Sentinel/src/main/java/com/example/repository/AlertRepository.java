@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,6 +18,7 @@ public interface AlertRepository extends JpaRepository<Alert, Integer> {
 
     Optional<Alert> findByTransactionTransactionId(Integer transactionId);
 
+    List<Alert> findByACaseCaseIdOrderByCreatedAtDesc(Integer caseId);
     /** Keeps every Alert linked to a Case in sync when the Case's lifecycle status changes (see AlertManager). */
     @Modifying(clearAutomatically = true)
     @Query("update Alert a set a.status = :status where a.aCase.caseId = :caseId")

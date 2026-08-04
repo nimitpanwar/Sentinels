@@ -1,5 +1,8 @@
 package com.example.controller;
 
+import com.example.entity.Alert;
+import com.example.entity.Case;
+import com.example.repository.AlertRepository;
 import com.example.dto.CaseStatsResponse;
 import com.example.entity.Case;
 import com.example.enums.CaseStatus;
@@ -29,10 +32,12 @@ public class CaseController {
 
     private final CaseRepository caseRepository;
     private final AlertManager alertManager;
+    private final AlertRepository alertRepository;
 
-    public CaseController(CaseRepository caseRepository, AlertManager alertManager) {
+    public CaseController(CaseRepository caseRepository, AlertManager alertManager, AlertRepository alertRepository) {
         this.caseRepository = caseRepository;
         this.alertManager = alertManager;
+        this.alertRepository = alertRepository;
     }
 
     @GetMapping
@@ -45,6 +50,12 @@ public class CaseController {
         return caseRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** All alerts that belong to this case, newest first. */
+    @GetMapping("/{id}/alerts")
+    public ResponseEntity<List<Alert>> getAlerts(@PathVariable Integer id) {
+        return ResponseEntity.ok(alertRepository.findByACaseCaseIdOrderByCreatedAtDesc(id));
     }
 
     @PatchMapping("/{id}/acknowledge")
