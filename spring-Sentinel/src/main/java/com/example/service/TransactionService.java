@@ -37,6 +37,7 @@ import com.example.enums.TransactionSource;
 import com.example.enums.TransactionStatus;
 import com.example.entity.RuleEvaluation;
 import com.example.event.TransactionCreatedEvent;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.AccountRepository;
 import com.example.repository.AlertRepository;
 import com.example.repository.PayeeRepository;
@@ -84,9 +85,9 @@ public class TransactionService {
     @Transactional
     public TransactionResponse createTransaction(TransactionRequest request, TransactionSource source) {
         Account account = accountRepository.findById(request.getAccountId())
-                .orElseThrow(() -> new RuntimeException("Account not found: " + request.getAccountId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + request.getAccountId()));
         Payee payee = payeeRepository.findById(request.getPayeeId())
-                .orElseThrow(() -> new RuntimeException("Payee not found: " + request.getPayeeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Payee not found: " + request.getPayeeId()));
 
         Transaction tx = Transaction.builder()
                 .account(account)
@@ -143,7 +144,7 @@ public class TransactionService {
     public TransactionResponse getTransactionById(Integer id) {
         return transactionRepository.findById(id)
                 .map(this::toResponseWithStoredEvaluation)
-                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + id));
     }
 
     /**
