@@ -100,18 +100,27 @@ public class TransactionSimulator {
 
     @Scheduled(fixedDelayString = "${simulator.interval-ms:3000}")
     public void generateTransaction() {
-        if (!running.get()) return;
-        if (!refreshPoolsIfNeeded()) return; // no seeded accounts/payees yet
+        // This runs on Spring's scheduler thread with no caller to catch a
+        // thrown exception - without this try/catch, one failed tick (e.g. a
+        // transient DB error) would only be logged by Spring's default
+        // scheduled-task error logging, so we handle it explicitly here to
+        // guarantee the simulator keeps ticking on the next fixed-delay run.
+        try {
+            if (!running.get()) return;
+            if (!refreshPoolsIfNeeded()) return; // no seeded accounts/payees yet
 
-        if (random.nextDouble() < scenarioProbability) {
-            int scenario = random.nextInt(3);
-            switch (scenario) {
-                case 0 -> triggerVelocityScenario();
-                case 1 -> triggerHighValueScenario();
-                case 2 -> triggerNewPayeeScenario();
+            if (random.nextDouble() < scenarioProbability) {
+                int scenario = random.nextInt(3);
+                switch (scenario) {
+                    case 0 -> triggerVelocityScenario();
+                    case 1 -> triggerHighValueScenario();
+                    case 2 -> triggerNewPayeeScenario();
+                }
+            } else {
+                generateRandomTransaction();
             }
-        } else {
-            generateRandomTransaction();
+        } catch (Exception ex) {
+            log.error("Simulator tick failed, will retry on next scheduled run: {}", ex.getMessage(), ex);
         }
     }
 
