@@ -36,7 +36,7 @@ public class AlertRepository {
     public Optional<Alert> findActiveAlertForAccount(String accountId) {
         return jpaRepository.findByAccountId(accountId).stream()
                 .map(this::toDomain)
-                .filter(Alert::isActive)
+            .filter(a -> a.isActive())
                 .findFirst();
     }
 

@@ -12,11 +12,11 @@ export async function fetchAlert(id) {
   return res.json();
 }
 
-export async function updateAlertStatus(id, status, resolutionNotes = '') {
+export async function updateAlertStatus(id, status, resolutionNotes = '', updateScope = 'ALERT') {
   const res = await fetch(`${BASE}/${id}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, resolutionNotes }),
+    body: JSON.stringify({ status, resolutionNotes, updateScope }),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -40,5 +40,35 @@ export async function fetchCaseAlerts(caseId) {
 export async function fetchRecentAccountTransactions(accountId, limit = 10) {
   const res = await fetch(`/api/accounts/${accountId}/transactions?limit=${limit}`);
   if (!res.ok) throw new Error(`Failed to fetch transactions for account ${accountId}: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchInvestigationThread(id) {
+  const res = await fetch(`${BASE}/${id}/investigation/thread`);
+  if (!res.ok) throw new Error(`Failed to fetch investigation thread for alert ${id}: ${res.status}`);
+  return res.json();
+}
+
+export async function sendInvestigationMessage(id, subject, body) {
+  const res = await fetch(`${BASE}/${id}/investigation/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, body }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to send investigation message: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function startInvestigation(id) {
+  const res = await fetch(`${BASE}/${id}/investigation/start`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to start investigation: ${res.status}`);
+  }
   return res.json();
 }

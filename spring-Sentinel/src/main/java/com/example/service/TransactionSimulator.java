@@ -127,10 +127,10 @@ public class TransactionSimulator {
     /** @return true if the pools are populated and ready to use. */
     private boolean refreshPoolsIfNeeded() {
         if (accountPool.isEmpty()) {
-            accountPool = new ArrayList<>(accountRepository.findAll().stream().map(com.example.entity.Account::getAccountId).toList());
+            accountPool = new ArrayList<>(accountRepository.findAll().stream().map(a -> a.getAccountId()).toList());
         }
         if (payeePool.isEmpty()) {
-            payeePool = new ArrayList<>(payeeRepository.findAll().stream().map(Payee::getPayeeId).toList());
+            payeePool = new ArrayList<>(payeeRepository.findAll().stream().map(p -> p.getPayeeId()).toList());
         }
         return !accountPool.isEmpty() && !payeePool.isEmpty();
     }

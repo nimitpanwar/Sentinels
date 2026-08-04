@@ -141,13 +141,18 @@ public class ChatbotService {
             if (content.isMissingNode()) {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unexpected Groq response: " + response.body());
             }
-            return content.asText();
+            return jsonText(content);
         } catch (IOException | InterruptedException | JacksonException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to reach Groq API: " + e.getMessage(), e);
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static String jsonText(JsonNode node) {
+        return node.asText();
     }
 
     private String buildContext() {

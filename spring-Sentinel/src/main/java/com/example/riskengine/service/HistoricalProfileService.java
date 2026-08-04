@@ -62,7 +62,7 @@ public class HistoricalProfileService {
             return coldStartProfile(current.getAccountId());
         }
 
-        List<BigDecimal> amounts = history.stream().map(Transaction::getAmount).toList();
+        List<BigDecimal> amounts = history.stream().map(t -> t.getAmount()).toList();
         BigDecimal mean = average(amounts);
         BigDecimal stdDev = stdDeviation(amounts, mean);
 
@@ -124,7 +124,7 @@ public class HistoricalProfileService {
     }
 
     private BigDecimal average(List<BigDecimal> amounts) {
-        BigDecimal sum = amounts.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sum = amounts.stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         return sum.divide(BigDecimal.valueOf(amounts.size()), 4, RoundingMode.HALF_UP);
     }
 

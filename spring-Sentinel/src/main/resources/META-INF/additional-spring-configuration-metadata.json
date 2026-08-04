@@ -1,0 +1,84 @@
+{
+  "properties": [
+    {
+      "name": "simulator.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable/disable the transaction simulator on startup."
+    },
+    {
+      "name": "simulator.interval-ms",
+      "type": "java.lang.Integer",
+      "description": "Interval in milliseconds between simulator runs."
+    },
+    {
+      "name": "simulator.scenario-probability",
+      "type": "java.lang.Double",
+      "description": "Probability [0..1] of generating a special scenario transaction."
+    },
+    {
+      "name": "simulator.log-file",
+      "type": "java.lang.String",
+      "description": "Path to simulator output log file."
+    },
+    {
+      "name": "groq.api.key",
+      "type": "java.lang.String",
+      "description": "Groq API key used by ChatbotService."
+    },
+    {
+      "name": "groq.api.url",
+      "type": "java.lang.String",
+      "description": "Groq chat completion endpoint URL."
+    },
+    {
+      "name": "groq.model",
+      "type": "java.lang.String",
+      "description": "Groq model name for chat completion requests."
+    },
+    {
+      "name": "chatbot.knowledge-files",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of knowledge file paths loaded by the chatbot."
+    },
+    {
+      "name": "network.python.executable",
+      "type": "java.lang.String",
+      "description": "Python executable used to launch network analysis scripts."
+    },
+    {
+      "name": "network.python.script-dir",
+      "type": "java.lang.String",
+      "description": "Directory that contains network-analysis Python scripts."
+    },
+    {
+      "name": "network.python.timeout-seconds",
+      "type": "java.lang.Integer",
+      "description": "Max allowed runtime for Python network analysis invocation."
+    },
+    {
+      "name": "app.investigation.email.override-enabled",
+      "type": "java.lang.Boolean",
+      "description": "When true, investigation emails are delivered only to override-recipient for safe testing."
+    },
+    {
+      "name": "app.investigation.email.override-recipient",
+      "type": "java.lang.String",
+      "description": "Destination mailbox used when investigation override-enabled is true."
+    },
+    {
+      "name": "app.investigation.response.token-ttl-hours",
+      "type": "java.lang.Integer",
+      "description": "Validity period in hours for customer response tokens included in outreach messages."
+    },
+    {
+      "name": "app.investigation.email.from",
+      "type": "java.lang.String",
+      "description": "Sender email address used for outbound investigation messages."
+    },
+    {
+      "name": "app.investigation.email.mode",
+      "type": "java.lang.String",
+      "description": "Email delivery mode: 'stub' logs only, 'smtp' performs real SMTP send."
+    }
+  ]
+}

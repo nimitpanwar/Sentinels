@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   fetchAlert, updateAlertStatus,
   fetchAlertEvaluations, fetchCaseAlerts, fetchRecentAccountTransactions,
+  fetchInvestigationThread, sendInvestigationMessage, startInvestigation,
 } from '../../api/alertsApi';
 import './alerts.css';
 import '../transactions/transactions.css';
@@ -53,6 +54,15 @@ export default function AlertDetailPage({ updateAlert }) {
   const [error, setError]             = useState(null);
   const [actionError, setActionError] = useState(null);
   const [working, setWorking]         = useState(false);
+  const [updateScope, setUpdateScope] = useState('ALERT');
+  const [showScopeConfirm, setShowScopeConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
+  const [activeTab, setActiveTab]     = useState('overview');
+  const [thread, setThread]           = useState([]);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [composeSubject, setComposeSubject] = useState('Sentinel Alert Verification Required - Please Confirm Recent Activity');
+  const [composeBody, setComposeBody] = useState('Hello,\n\nWe detected unusual activity on your account. Please review and respond using the secure link provided below:\n\n{{response_link}}\n\nIf this transaction was not authorized by you, please mention that in your response.\n\nRegards,\nSentinel Investigations Team');
 
   // Dismiss modal state
   const [showDismiss, setShowDismiss] = useState(false);
@@ -86,7 +96,8 @@ export default function AlertDetailPage({ updateAlert }) {
         const p3 = caseId
           ? fetchCaseAlerts(caseId).then(setCaseAlerts).catch(() => {})
           : Promise.resolve();
-        return Promise.all([p1, p2, p3]);
+        const p4 = fetchInvestigationThread(id).then(setThread).catch(() => {});
+        return Promise.all([p1, p2, p3, p4]);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -97,14 +108,29 @@ export default function AlertDetailPage({ updateAlert }) {
   }, [showDismiss]);
 
   async function handleDismiss() {
+    if (updateScope === 'CASE') {
+      setPendingAction('DISMISS');
+      setShowScopeConfirm(true);
+      return;
+    }
+    await runDismiss();
+  }
+
+  async function runDismiss(scope = updateScope) {
     setWorking(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
-      const updated = await updateAlertStatus(id, 'DISMISSED', dismissNotes);
+      const updated = await updateAlertStatus(id, 'DISMISSED', dismissNotes, scope);
       setAlert(updated);
       if (updateAlert) updateAlert(updated);  // patch App-level cache
       setShowDismiss(false);
       setDismissNotes('');
+      if (scope === 'CASE') {
+        setActionSuccess(`Case-level update applied to ${caseAlerts.length || 1} alert(s).`);
+      } else {
+        setActionSuccess('Alert updated successfully.');
+      }
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -112,7 +138,93 @@ export default function AlertDetailPage({ updateAlert }) {
     }
   }
 
+  async function handleSendInvestigation() {
+    if (!composeSubject.trim() || !composeBody.trim()) {
+      setActionError('Subject and message body are required');
+      return;
+    }
+    setWorking(true);
+    setActionError(null);
+    try {
+      const result = await sendInvestigationMessage(id, composeSubject, composeBody);
+      if (result.alert) {
+        setAlert(result.alert);
+        if (updateAlert) updateAlert(result.alert);
+      }
+      setThreadLoading(true);
+      const latestThread = await fetchInvestigationThread(id);
+      setThread(latestThread);
+      setActiveTab('investigation');
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setThreadLoading(false);
+      setWorking(false);
+    }
+  }
+
+  async function handleStartInvestigation() {
+    if (updateScope === 'CASE') {
+      setPendingAction('INVESTIGATE');
+      setShowScopeConfirm(true);
+      return;
+    }
+    await runStartInvestigation();
+  }
+
+  async function runStartInvestigation(scope = updateScope) {
+    setWorking(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      let updated;
+      if (scope === 'CASE') {
+        updated = await updateAlertStatus(id, 'INVESTIGATING', '', 'CASE');
+      } else {
+        updated = await startInvestigation(id);
+      }
+      setAlert(updated);
+      if (updateAlert) updateAlert(updated);
+      setActiveTab('investigation');
+      if (scope === 'CASE') {
+        setActionSuccess(`Case-level update applied to ${caseAlerts.length || 1} alert(s).`);
+      } else {
+        setActionSuccess('Alert moved to investigating.');
+      }
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function confirmScopeAction() {
+    setShowScopeConfirm(false);
+    if (pendingAction === 'INVESTIGATE') {
+      await runStartInvestigation('CASE');
+    } else if (pendingAction === 'DISMISS') {
+      await runDismiss('CASE');
+    }
+    setPendingAction(null);
+  }
+
+  async function openInvestigationTab() {
+    const current = alert?.status;
+    // If already investigating/terminal, just switch tabs with no API call.
+    if (!current || current === 'INVESTIGATING' || current === 'ESCALATED' || current === 'CLOSED' || current === 'DISMISSED') {
+      setActiveTab('investigation');
+      return;
+    }
+    await handleStartInvestigation();
+  }
+
   const isTerminal = alert && (alert.status === 'DISMISSED' || alert.status === 'CLOSED');
+  // Keep tabs visible once analyst has entered investigation mode, even if
+  // backend status is still propagating and temporarily reports ACKNOWLEDGED.
+  const showInvestigationTabs =
+    alert?.status === 'INVESTIGATING' ||
+    alert?.status === 'ESCALATED' ||
+    activeTab === 'investigation';
   const tx   = alert?.transaction ?? {};
   const acct = tx.account ?? {};
   const payee = tx.payee ?? {};
@@ -135,6 +247,95 @@ export default function AlertDetailPage({ updateAlert }) {
             {severityBadge(alert.severity)}
             {statusBadge(alert.status)}
           </div>
+
+          {showInvestigationTabs && (
+            <div className="investigation-tabs">
+              <button
+                className={`investigation-tab ${activeTab === 'overview' ? 'investigation-tab--active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                Overview
+              </button>
+              <button
+                className={`investigation-tab ${activeTab === 'investigation' ? 'investigation-tab--active' : ''}`}
+                onClick={openInvestigationTab}
+              >
+                Investigation
+              </button>
+            </div>
+          )}
+
+          {showInvestigationTabs && activeTab === 'investigation' && (
+            <div className="alert-detail-tab-content">
+            <div className="investigation-panel">
+              {actionError && <p className="alert-action-error">{actionError}</p>}
+              {isTerminal && (
+                <div className="investigation-terminal-note">
+                  This alert is in a terminal state. Outreach is locked, but historical thread entries are available below.
+                </div>
+              )}
+              <div className="investigation-compose">
+                <h2 className="alert-detail-card-title">Customer Outreach Email</h2>
+                <label className="dismiss-modal__label" htmlFor="investigation-subject">Subject</label>
+                <input
+                  id="investigation-subject"
+                  className="investigation-input"
+                  value={composeSubject}
+                  onChange={e => setComposeSubject(e.target.value)}
+                  placeholder="Email subject"
+                />
+                <label className="dismiss-modal__label" htmlFor="investigation-body">Message</label>
+                <textarea
+                  id="investigation-body"
+                  className="dismiss-modal__textarea"
+                  rows={8}
+                  value={composeBody}
+                  onChange={e => setComposeBody(e.target.value)}
+                />
+                <p className="investigation-hint">
+                  Use {'{{response_link}}'} placeholder in the message body. It will be replaced by a secure response URL in the next phase.
+                </p>
+                <div className="dismiss-modal__buttons">
+                  <button className="btn btn--secondary" onClick={handleSendInvestigation} disabled={working || isTerminal}>
+                    {working ? 'Sending…' : 'Send Investigation Email'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="investigation-thread">
+                <h2 className="alert-detail-card-title">Investigation Thread</h2>
+                {threadLoading && <div className="alerts-loading">Refreshing thread…</div>}
+                {!threadLoading && thread.length === 0 && (
+                  <div className="alerts-empty">No outreach sent for this alert yet.</div>
+                )}
+                {!threadLoading && thread.length > 0 && (
+                  <ul className="investigation-thread-list">
+                    {thread.map(item => (
+                      <li key={item.messageId} className="investigation-thread-item">
+                        <div className="investigation-thread-item__top">
+                          <span className="mono">Message #{item.messageId}</span>
+                          <span className={`badge badge--${item.deliveryStatus === 'SENT' ? 'open' : 'dismissed'}`}>
+                            {item.deliveryStatus}
+                          </span>
+                        </div>
+                        <div className="investigation-thread-meta">
+                          <span>To: {item.deliveredRecipientEmail || '—'}</span>
+                          <span>Sent: {fmtDate(item.sentAt)}</span>
+                          <span>Token Expires: {fmtDate(item.responseTokenExpiresAt)}</span>
+                        </div>
+                        <div className="investigation-thread-subject">{item.subject}</div>
+                        <pre className="investigation-thread-body">{item.bodySnapshot}</pre>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            </div>
+          )}
+
+          {(activeTab === 'overview' || (!showInvestigationTabs && activeTab !== 'investigation')) && (
+            <div className="alert-detail-tab-content">
 
           {/* ── Cards row 1: Alert Info + Transaction ── */}
           <div className="alert-detail-cards">
@@ -267,6 +468,34 @@ export default function AlertDetailPage({ updateAlert }) {
           {!isTerminal && (
             <div className="alert-detail-actions">
               {actionError && <p className="alert-action-error">{actionError}</p>}
+              {actionSuccess && <p className="alert-action-success">{actionSuccess}</p>}
+              <div className="alert-scope-control">
+                <span className="alert-scope-label">Update scope</span>
+                <div className="alert-scope-segment">
+                  <button
+                    className={`scope-chip ${updateScope === 'ALERT' ? 'scope-chip--active' : ''}`}
+                    onClick={() => setUpdateScope('ALERT')}
+                    disabled={working}
+                    type="button"
+                  >
+                    This alert
+                  </button>
+                  <button
+                    className={`scope-chip ${updateScope === 'CASE' ? 'scope-chip--active' : ''}`}
+                    onClick={() => setUpdateScope('CASE')}
+                    disabled={working || !alert?.case?.caseId}
+                    type="button"
+                    title={alert?.case?.caseId ? '' : 'Case-level update not available'}
+                  >
+                    Entire case
+                  </button>
+                </div>
+                {updateScope === 'CASE' && (
+                  <p className="alert-scope-hint">
+                    This action will update {caseAlerts.length || 1} alert(s) in Case #{alert?.case?.caseId ?? '—'}.
+                  </p>
+                )}
+              </div>
               <button
                 className="btn btn--danger"
                 onClick={() => setShowDismiss(true)}
@@ -274,9 +503,16 @@ export default function AlertDetailPage({ updateAlert }) {
               >
                 Dismiss Alert
               </button>
-              <button className="btn btn--secondary" disabled title="Coming soon">
+              <button
+                className="btn btn--secondary"
+                onClick={openInvestigationTab}
+                disabled={working}
+              >
                 Investigate
               </button>
+            </div>
+          )}
+
             </div>
           )}
 
@@ -307,6 +543,25 @@ export default function AlertDetailPage({ updateAlert }) {
                   </button>
                   <button className="btn btn--danger" onClick={handleDismiss} disabled={working}>
                     {working ? 'Dismissing…' : 'Confirm Dismiss'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showScopeConfirm && (
+            <div className="dismiss-overlay" onClick={() => setShowScopeConfirm(false)}>
+              <div className="dismiss-modal" onClick={e => e.stopPropagation()}>
+                <h2 className="dismiss-modal__title">Apply update to entire case?</h2>
+                <p className="dismiss-modal__sub">
+                  You are about to apply this status update to {caseAlerts.length || 1} alert(s) in Case #{alert?.case?.caseId ?? '—'}.
+                </p>
+                <div className="dismiss-modal__buttons">
+                  <button className="btn btn--ghost" onClick={() => setShowScopeConfirm(false)} disabled={working}>
+                    Cancel
+                  </button>
+                  <button className="btn btn--secondary" onClick={confirmScopeAction} disabled={working}>
+                    Confirm Case Update
                   </button>
                 </div>
               </div>

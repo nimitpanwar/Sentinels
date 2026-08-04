@@ -25,6 +25,7 @@ export default function TransactionTable({ rows }) {
             <th className="th">Timestamp</th>
             <th className="th mono">Account No.</th>
             <th className="th">Payee</th>
+            <th className="th mono">Payee ID</th>
             <th className="th th--num">Amount</th>
             <th className="th">Type</th>
             <th className="th">Status</th>

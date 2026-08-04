@@ -167,12 +167,12 @@ public class TransactionService {
         double weightedSum = 0.0;
         double totalWeight = 0.0;
         List<String> triggeredRuleNames = evaluations.stream()
-                .filter(RuleEvaluation::isTriggered)
+                .filter(e -> e.isTriggered())
                 .map(e -> e.getRule().getRuleType().name())
                 .toList();
         List<String> evidence = evaluations.stream()
-                .filter(RuleEvaluation::isTriggered)
-                .map(RuleEvaluation::getReason)
+                .filter(e -> e.isTriggered())
+                .map(e -> e.getReason())
                 .toList();
         for (RuleEvaluation e : evaluations) {
             if (e.isTriggered()) {
@@ -196,6 +196,12 @@ public class TransactionService {
                 .createdAt(tx.getCreatedAt())
                 .location(tx.getLocation())
                 .merchantCategory(tx.getMerchantCategory())
+                .accountNumber(tx.getAccount() != null ? tx.getAccount().getAccountNumber() : null)
+                .customerName(tx.getAccount() != null && tx.getAccount().getCustomer() != null
+                        ? tx.getAccount().getCustomer().getFirstName() + " " + tx.getAccount().getCustomer().getLastName()
+                        : null)
+                .payeeName(tx.getPayee() != null ? tx.getPayee().getPayeeName() : null)
+                .payeeIdentifier(tx.getPayee() != null ? tx.getPayee().getPayeeIdentifier() : null)
                 .riskScore(riskScore)
                 .triggeredRules(triggeredRuleNames)
                 .evidence(evidence);
@@ -228,7 +234,13 @@ public class TransactionService {
                 .description(tx.getDescription())
                 .createdAt(tx.getCreatedAt())
                 .location(tx.getLocation())
-                .merchantCategory(tx.getMerchantCategory());
+                .merchantCategory(tx.getMerchantCategory())
+                .accountNumber(tx.getAccount() != null ? tx.getAccount().getAccountNumber() : null)
+                .customerName(tx.getAccount() != null && tx.getAccount().getCustomer() != null
+                        ? tx.getAccount().getCustomer().getFirstName() + " " + tx.getAccount().getCustomer().getLastName()
+                        : null)
+                .payeeName(tx.getPayee() != null ? tx.getPayee().getPayeeName() : null)
+                .payeeIdentifier(tx.getPayee() != null ? tx.getPayee().getPayeeIdentifier() : null);
 
         if (outcome != null) {
             builder.riskScore(outcome.getRiskResult().getRiskScore())
