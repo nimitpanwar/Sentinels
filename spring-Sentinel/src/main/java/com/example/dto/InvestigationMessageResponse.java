@@ -1,6 +1,7 @@
 package com.example.dto;
 
 import com.example.enums.InvestigationMessageStatus;
+import com.example.enums.InvestigationResponseStatus;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,13 @@ public class InvestigationMessageResponse {
     private LocalDateTime createdAt;
     private LocalDateTime sentAt;
     private LocalDateTime responseTokenExpiresAt;
+    private InvestigationResponseStatus responseStatus;
+    private LocalDateTime respondedAt;
+    private Boolean recognizedTransaction;
+    private Boolean authorizedTransaction;
+    private String responseExplanation;
+    private String respondentName;
+    private String respondentEmail;
 
     public InvestigationMessageResponse() {
     }
@@ -46,4 +54,18 @@ public class InvestigationMessageResponse {
     public void setSentAt(LocalDateTime sentAt) { this.sentAt = sentAt; }
     public LocalDateTime getResponseTokenExpiresAt() { return responseTokenExpiresAt; }
     public void setResponseTokenExpiresAt(LocalDateTime responseTokenExpiresAt) { this.responseTokenExpiresAt = responseTokenExpiresAt; }
+    public InvestigationResponseStatus getResponseStatus() { return responseStatus; }
+    public void setResponseStatus(InvestigationResponseStatus responseStatus) { this.responseStatus = responseStatus; }
+    public LocalDateTime getRespondedAt() { return respondedAt; }
+    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+    public Boolean getRecognizedTransaction() { return recognizedTransaction; }
+    public void setRecognizedTransaction(Boolean recognizedTransaction) { this.recognizedTransaction = recognizedTransaction; }
+    public Boolean getAuthorizedTransaction() { return authorizedTransaction; }
+    public void setAuthorizedTransaction(Boolean authorizedTransaction) { this.authorizedTransaction = authorizedTransaction; }
+    public String getResponseExplanation() { return responseExplanation; }
+    public void setResponseExplanation(String responseExplanation) { this.responseExplanation = responseExplanation; }
+    public String getRespondentName() { return respondentName; }
+    public void setRespondentName(String respondentName) { this.respondentName = respondentName; }
+    public String getRespondentEmail() { return respondentEmail; }
+    public void setRespondentEmail(String respondentEmail) { this.respondentEmail = respondentEmail; }
 }

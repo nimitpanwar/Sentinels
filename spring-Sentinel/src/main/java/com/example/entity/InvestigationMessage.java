@@ -1,6 +1,7 @@
 package com.example.entity;
 
 import com.example.enums.InvestigationMessageStatus;
+import com.example.enums.InvestigationResponseStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -53,6 +54,16 @@ public class InvestigationMessage {
     private LocalDateTime responseTokenExpiresAt;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "response_status", nullable = false, length = 25)
+    private InvestigationResponseStatus responseStatus = InvestigationResponseStatus.AWAITING_RESPONSE;
+
+    @Column(name = "responded_at")
+    private LocalDateTime respondedAt;
+
+    @Column(name = "token_consumed_at")
+    private LocalDateTime tokenConsumedAt;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "delivery_status", nullable = false, length = 15)
     private InvestigationMessageStatus deliveryStatus = InvestigationMessageStatus.PENDING;
 
@@ -93,6 +104,12 @@ public class InvestigationMessage {
     public void setResponseToken(String responseToken) { this.responseToken = responseToken; }
     public LocalDateTime getResponseTokenExpiresAt() { return responseTokenExpiresAt; }
     public void setResponseTokenExpiresAt(LocalDateTime responseTokenExpiresAt) { this.responseTokenExpiresAt = responseTokenExpiresAt; }
+    public InvestigationResponseStatus getResponseStatus() { return responseStatus; }
+    public void setResponseStatus(InvestigationResponseStatus responseStatus) { this.responseStatus = responseStatus; }
+    public LocalDateTime getRespondedAt() { return respondedAt; }
+    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+    public LocalDateTime getTokenConsumedAt() { return tokenConsumedAt; }
+    public void setTokenConsumedAt(LocalDateTime tokenConsumedAt) { this.tokenConsumedAt = tokenConsumedAt; }
     public InvestigationMessageStatus getDeliveryStatus() { return deliveryStatus; }
     public void setDeliveryStatus(InvestigationMessageStatus deliveryStatus) { this.deliveryStatus = deliveryStatus; }
     public String getDeliveryError() { return deliveryError; }

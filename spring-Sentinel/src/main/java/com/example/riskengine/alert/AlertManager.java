@@ -180,8 +180,9 @@ public class AlertManager {
             // OPEN -> INVESTIGATING is allowed for one-click analyst takeover
             // from the alert detail page's Investigate action.
             CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING),
-            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.CLOSED, CaseStatus.DISMISSED),
-            CaseStatus.INVESTIGATING, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
+            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
+            CaseStatus.INVESTIGATING, Set.of(CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
+            CaseStatus.ESCALATED, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
             // CLOSED, DISMISSED: intentionally absent - terminal states.
     );
 
@@ -205,6 +206,12 @@ public class AlertManager {
     @Transactional
     public Optional<Case> dismiss(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
         return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode);
+    }
+
+    /** Escalates the case for deeper/manual review while keeping it active. */
+    @Transactional
+    public Optional<Case> escalate(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
+        return updateCaseStatus(caseId, CaseStatus.ESCALATED, resolutionNotes, reasonCode);
     }
 
     private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes, ResolutionReasonCode reasonCode) {

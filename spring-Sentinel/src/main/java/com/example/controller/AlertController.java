@@ -1,5 +1,6 @@
 package com.example.controller;
 
+import com.example.dto.InvestigationAnalystActionRequest;
 import com.example.dto.InvestigationMessageResponse;
 import com.example.dto.InvestigationSendRequest;
 import com.example.dto.InvestigationSendResponse;
@@ -172,6 +173,13 @@ public class AlertController {
     @GetMapping("/{id}/investigation/thread")
     public ResponseEntity<List<InvestigationMessageResponse>> getInvestigationThread(@PathVariable Integer id) {
         return ResponseEntity.ok(investigationService.getThread(id));
+    }
+
+    /** Applies analyst action after reviewing customer response in investigation workflow. */
+    @PatchMapping("/{id}/investigation/action")
+    public ResponseEntity<InvestigationSendResponse> applyInvestigationAction(@PathVariable Integer id,
+                                                                              @RequestBody InvestigationAnalystActionRequest request) {
+        return ResponseEntity.ok(investigationService.applyAnalystAction(id, request));
     }
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
