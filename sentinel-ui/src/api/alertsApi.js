@@ -86,6 +86,41 @@ export async function applyInvestigationAction(id, action, analystNotes = '', su
   return res.json();
 }
 
+export async function fetchInvestigationProfile(id) {
+  const res = await fetch(`${BASE}/${id}/investigation/profile`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to fetch investigation profile: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateInvestigationProfile(id, payload) {
+  const res = await fetch(`${BASE}/${id}/investigation/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to update investigation profile: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function submitHighRiskSelfApproval(id, payload) {
+  const res = await fetch(`${BASE}/${id}/investigation/high-risk-self-approval`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to submit high-risk self-approval: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function fetchInvestigationResponseContext(token) {
   const res = await fetch(`/api/investigation/respond/${token}`);
   if (!res.ok) {

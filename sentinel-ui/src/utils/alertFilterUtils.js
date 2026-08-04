@@ -68,8 +68,11 @@ export function filterAlerts(alerts, filters) {
     // Account search
     if (acctQ) {
       const acctNum  = (acct.accountNumber  ?? '').toLowerCase();
-      const custName = (acct.customerName   ?? '').toLowerCase();
-      if (!acctNum.includes(acctQ) && !custName.includes(acctQ)) return false;
+      const first = (acct.customer?.firstName ?? '').toLowerCase();
+      const last = (acct.customer?.lastName ?? '').toLowerCase();
+      const full = `${first} ${last}`.trim();
+      const legacy = (acct.customerName ?? '').toLowerCase();
+      if (!acctNum.includes(acctQ) && !full.includes(acctQ) && !legacy.includes(acctQ)) return false;
     }
 
     // Payee search

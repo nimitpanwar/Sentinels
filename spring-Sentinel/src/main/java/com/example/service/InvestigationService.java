@@ -1,7 +1,10 @@
 package com.example.service;
 
 import com.example.dto.InvestigationAnalystActionRequest;
+import com.example.dto.HighRiskSelfApprovalRequest;
 import com.example.dto.InvestigationMessageResponse;
+import com.example.dto.InvestigationProfileResponse;
+import com.example.dto.InvestigationProfileUpdateRequest;
 import com.example.dto.InvestigationResponseFormContextResponse;
 import com.example.dto.InvestigationResponseFormRequest;
 import com.example.dto.InvestigationResponseReceiptResponse;
@@ -15,6 +18,7 @@ import com.example.entity.InvestigationResponse;
 import com.example.enums.CaseStatus;
 import com.example.enums.InvestigationMessageStatus;
 import com.example.enums.InvestigationResponseStatus;
+import com.example.enums.Severity;
 import com.example.repository.AlertRepository;
 import com.example.repository.InvestigationMessageRepository;
 import com.example.repository.InvestigationResponseRepository;
@@ -30,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -67,6 +73,12 @@ public class InvestigationService {
     @Value("${app.investigation.response.public-base-url:http://localhost:5173}")
     private String responsePublicBaseUrl;
 
+    @Value("${app.investigation.high-risk.cooldown-minutes:10}")
+    private int highRiskCooldownMinutes;
+
+    @Value("${app.investigation.high-risk.allow-skip-cooldown:false}")
+    private boolean allowSkipHighRiskCooldown;
+
     public InvestigationService(AlertRepository alertRepository,
                                 InvestigationMessageRepository messageRepository,
                                 InvestigationResponseRepository responseRepository,
@@ -101,6 +113,82 @@ public class InvestigationService {
                 .stream()
                 .map(msg -> toResponse(msg, responseRepository.findByMessageMessageId(msg.getMessageId()).orElse(null)))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public InvestigationProfileResponse getInvestigationProfile(Integer alertId) {
+        Alert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + alertId));
+        Case aCase = alert.getCase();
+        if (aCase == null) {
+            throw new IllegalStateException("Alert " + alertId + " has no case");
+        }
+
+        return buildProfile(alert, aCase);
+    }
+
+    @Transactional
+    public InvestigationProfileResponse updateInvestigationProfile(Integer alertId, InvestigationProfileUpdateRequest request) {
+        Alert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + alertId));
+        Case aCase = alert.getCase();
+        if (aCase == null) {
+            throw new IllegalStateException("Alert " + alertId + " has no case");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("Profile update payload is required");
+        }
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (request.getAnalystNote() != null) {
+            String trimmed = request.getAnalystNote().trim();
+            aCase.setInvestigationAnalystNote(trimmed.isEmpty() ? null : trimmed);
+            aCase.setInvestigationAnalystNoteAt(trimmed.isEmpty() ? null : now);
+        }
+        if (request.getChecklistComplete() != null) {
+            boolean checklistComplete = request.getChecklistComplete();
+            aCase.setInvestigationChecklistComplete(checklistComplete);
+            aCase.setInvestigationChecklistCompletedAt(checklistComplete ? now : null);
+        }
+
+        Case saved = alertManager.saveCase(aCase);
+        Alert refreshed = alertRepository.findById(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found after profile update: " + alertId));
+        return buildProfile(refreshed, saved);
+    }
+
+    @Transactional
+    public InvestigationProfileResponse submitHighRiskSelfApproval(Integer alertId, HighRiskSelfApprovalRequest request) {
+        Alert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + alertId));
+        Case aCase = alert.getCase();
+        if (aCase == null) {
+            throw new IllegalStateException("Alert " + alertId + " has no case");
+        }
+        if (aCase.getSeverity() != Severity.HIGH) {
+            throw new IllegalArgumentException("High-risk self-approval is only required for HIGH severity cases");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("Self-approval payload is required");
+        }
+        if (isBlank(request.getJustification())) {
+            throw new IllegalArgumentException("justification is required");
+        }
+        if (!Boolean.TRUE.equals(request.getConfirmOne()) || !Boolean.TRUE.equals(request.getConfirmTwo())) {
+            throw new IllegalArgumentException("Both confirmation checks are required for HIGH severity close/dismiss");
+        }
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        boolean skipCooldown = Boolean.TRUE.equals(request.getSkipCooldown()) && allowSkipHighRiskCooldown;
+        aCase.setHighRiskJustification(request.getJustification().trim());
+        aCase.setHighRiskAcknowledgedAt(now);
+        aCase.setHighRiskSecondConfirmAt(now);
+        aCase.setHighRiskCooldownUntil(skipCooldown ? now : now.plusMinutes(Math.max(highRiskCooldownMinutes, 0)));
+
+        Case saved = alertManager.saveCase(aCase);
+        Alert refreshed = alertRepository.findById(alertId)
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found after self-approval update: " + alertId));
+        return buildProfile(refreshed, saved);
     }
 
     @Transactional(readOnly = true)
@@ -178,7 +266,19 @@ public class InvestigationService {
             throw new IllegalStateException("Alert " + alertId + " has no case");
         }
 
+        // Ensure lifecycle starts before terminal/non-terminal analyst actions.
+        // OPEN -> ACKNOWLEDGED is enough for dismiss/escalate to be legal.
+        moveCaseIntoInvestigatingIfNeeded(aCase);
+
         String action = request.getAction().trim().toUpperCase(Locale.ROOT);
+        if (request.getAnalystNotes() != null) {
+            String trimmedNotes = request.getAnalystNotes().trim();
+            if (!trimmedNotes.isEmpty()) {
+                aCase.setInvestigationAnalystNote(trimmedNotes);
+                aCase.setInvestigationAnalystNoteAt(LocalDateTime.now(ZoneOffset.UTC));
+                alertManager.saveCase(aCase);
+            }
+        }
         return switch (action) {
             case "DISMISS" -> {
                 alertManager.dismiss(aCase.getCaseId(), request.getAnalystNotes(), null)
@@ -280,6 +380,94 @@ public class InvestigationService {
             base = "http://localhost:5173";
         }
         return base + "/investigation/respond/" + token;
+    }
+
+    private InvestigationProfileResponse buildProfile(Alert alert, Case aCase) {
+        InvestigationProfileResponse response = new InvestigationProfileResponse();
+        response.setAlertId(alert.getAlertId());
+        response.setCaseId(aCase.getCaseId());
+        Severity profileSeverity = alert.getSeverity() == null ? Severity.LOW : alert.getSeverity();
+        response.setSeverity(profileSeverity.name());
+
+        List<String> required = requiredStepsFor(profileSeverity);
+        List<String> completed = completedStepsFor(aCase, required, profileSeverity);
+        List<String> blockedReasons = blockedReasonsFor(required, completed);
+
+        response.setRequiredSteps(required);
+        response.setCompletedSteps(completed);
+        response.setBlockedReasons(blockedReasons);
+        response.setCooldownRemainingSeconds(cooldownRemainingSeconds(aCase));
+        response.setAllowSkipCooldown(allowSkipHighRiskCooldown);
+        return response;
+    }
+
+    private List<String> requiredStepsFor(Severity severity) {
+        if (severity == null) {
+            return List.of("ANALYST_NOTE");
+        }
+        return switch (severity) {
+            case LOW -> List.of("ANALYST_NOTE");
+            case MID -> List.of("ANALYST_NOTE", "OUTREACH_SENT", "CHECKLIST_COMPLETE");
+            case HIGH -> List.of("ANALYST_NOTE", "OUTREACH_SENT", "CHECKLIST_COMPLETE", "HIGH_RISK_SELF_APPROVAL", "HIGH_RISK_COOLDOWN_COMPLETE");
+        };
+    }
+
+    private List<String> completedStepsFor(Case aCase, List<String> required, Severity profileSeverity) {
+        List<String> completed = new ArrayList<>();
+        for (String step : required) {
+            if (isStepComplete(aCase, step, profileSeverity)) {
+                completed.add(step);
+            }
+        }
+        return completed;
+    }
+
+    private boolean isStepComplete(Case aCase, String step, Severity profileSeverity) {
+        return switch (step) {
+            case "ANALYST_NOTE" -> !isBlank(aCase.getInvestigationAnalystNote());
+            case "OUTREACH_SENT" -> messageRepository.existsByACaseCaseIdAndDeliveryStatus(
+                aCase.getCaseId(), InvestigationMessageStatus.SENT);
+            case "CHECKLIST_COMPLETE" -> Boolean.TRUE.equals(aCase.getInvestigationChecklistComplete());
+            case "HIGH_RISK_SELF_APPROVAL" -> !isBlank(aCase.getHighRiskJustification())
+                    && aCase.getHighRiskAcknowledgedAt() != null
+                    && aCase.getHighRiskSecondConfirmAt() != null;
+            case "HIGH_RISK_COOLDOWN_COMPLETE" -> {
+                if (profileSeverity != Severity.HIGH) {
+                    yield true;
+                }
+                if (aCase.getHighRiskCooldownUntil() == null) {
+                    yield false;
+                }
+                yield !aCase.getHighRiskCooldownUntil().isAfter(LocalDateTime.now(ZoneOffset.UTC));
+            }
+            default -> false;
+        };
+    }
+
+    private List<String> blockedReasonsFor(List<String> required, List<String> completed) {
+        List<String> blocked = new ArrayList<>();
+        for (String step : required) {
+            if (completed.contains(step)) {
+                continue;
+            }
+            switch (step) {
+                case "ANALYST_NOTE" -> blocked.add("Add analyst note before final action");
+                case "OUTREACH_SENT" -> blocked.add("Send outreach before final action");
+                case "CHECKLIST_COMPLETE" -> blocked.add("Complete investigation checklist before final action");
+                case "HIGH_RISK_SELF_APPROVAL" -> blocked.add("Complete high-risk self-approval before final action");
+                case "HIGH_RISK_COOLDOWN_COMPLETE" -> blocked.add("Wait for high-risk cooldown to finish before final action");
+                default -> blocked.add("Complete required investigation step: " + step);
+            }
+        }
+        return blocked;
+    }
+
+    private Integer cooldownRemainingSeconds(Case aCase) {
+        if (aCase.getHighRiskCooldownUntil() == null) {
+            return 0;
+        }
+        long seconds = ChronoUnit.SECONDS.between(LocalDateTime.now(ZoneOffset.UTC), aCase.getHighRiskCooldownUntil());
+        return (int) Math.max(0, seconds);
     }
 
     private void moveCaseIntoInvestigatingIfNeeded(Case aCase) {

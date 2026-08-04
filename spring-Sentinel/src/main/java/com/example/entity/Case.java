@@ -66,6 +66,30 @@ public class Case {
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
 
+    @Column(name = "investigation_analyst_note", columnDefinition = "TEXT")
+    private String investigationAnalystNote;
+
+    @Column(name = "investigation_analyst_note_at")
+    private LocalDateTime investigationAnalystNoteAt;
+
+    @Column(name = "investigation_checklist_complete", nullable = false)
+    private Boolean investigationChecklistComplete = Boolean.FALSE;
+
+    @Column(name = "investigation_checklist_completed_at")
+    private LocalDateTime investigationChecklistCompletedAt;
+
+    @Column(name = "high_risk_justification", columnDefinition = "TEXT")
+    private String highRiskJustification;
+
+    @Column(name = "high_risk_acknowledged_at")
+    private LocalDateTime highRiskAcknowledgedAt;
+
+    @Column(name = "high_risk_second_confirm_at")
+    private LocalDateTime highRiskSecondConfirmAt;
+
+    @Column(name = "high_risk_cooldown_until")
+    private LocalDateTime highRiskCooldownUntil;
+
     // Structured counterpart to resolutionNotes, set only when status becomes
     // CLOSED/DISMISSED (see AlertManager.updateCaseStatus). Distinguishes
     // "confirmed fraud" from other resolutions without parsing free text -
@@ -112,6 +136,22 @@ public class Case {
     public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+    public String getInvestigationAnalystNote() { return investigationAnalystNote; }
+    public void setInvestigationAnalystNote(String investigationAnalystNote) { this.investigationAnalystNote = investigationAnalystNote; }
+    public LocalDateTime getInvestigationAnalystNoteAt() { return investigationAnalystNoteAt; }
+    public void setInvestigationAnalystNoteAt(LocalDateTime investigationAnalystNoteAt) { this.investigationAnalystNoteAt = investigationAnalystNoteAt; }
+    public Boolean getInvestigationChecklistComplete() { return investigationChecklistComplete; }
+    public void setInvestigationChecklistComplete(Boolean investigationChecklistComplete) { this.investigationChecklistComplete = investigationChecklistComplete; }
+    public LocalDateTime getInvestigationChecklistCompletedAt() { return investigationChecklistCompletedAt; }
+    public void setInvestigationChecklistCompletedAt(LocalDateTime investigationChecklistCompletedAt) { this.investigationChecklistCompletedAt = investigationChecklistCompletedAt; }
+    public String getHighRiskJustification() { return highRiskJustification; }
+    public void setHighRiskJustification(String highRiskJustification) { this.highRiskJustification = highRiskJustification; }
+    public LocalDateTime getHighRiskAcknowledgedAt() { return highRiskAcknowledgedAt; }
+    public void setHighRiskAcknowledgedAt(LocalDateTime highRiskAcknowledgedAt) { this.highRiskAcknowledgedAt = highRiskAcknowledgedAt; }
+    public LocalDateTime getHighRiskSecondConfirmAt() { return highRiskSecondConfirmAt; }
+    public void setHighRiskSecondConfirmAt(LocalDateTime highRiskSecondConfirmAt) { this.highRiskSecondConfirmAt = highRiskSecondConfirmAt; }
+    public LocalDateTime getHighRiskCooldownUntil() { return highRiskCooldownUntil; }
+    public void setHighRiskCooldownUntil(LocalDateTime highRiskCooldownUntil) { this.highRiskCooldownUntil = highRiskCooldownUntil; }
     public ResolutionReasonCode getResolutionReasonCode() { return resolutionReasonCode; }
     public void setResolutionReasonCode(ResolutionReasonCode resolutionReasonCode) { this.resolutionReasonCode = resolutionReasonCode; }
     public LocalDateTime getLastAlertAt() { return lastAlertAt; }
