@@ -79,6 +79,11 @@
       "name": "app.investigation.email.mode",
       "type": "java.lang.String",
       "description": "Email delivery mode: 'stub' logs only, 'smtp' performs real SMTP send."
+    },
+    {
+      "name": "app.investigation.response.public-base-url",
+      "type": "java.lang.String",
+      "description": "Publicly reachable frontend base URL used to generate secure investigation response links in emails (for example, https://app.example.com)."
     }
   ]
 }

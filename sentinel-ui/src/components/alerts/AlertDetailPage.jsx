@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   fetchAlert, updateAlertStatus,
   fetchAlertEvaluations, fetchCaseAlerts, fetchRecentAccountTransactions,
-  fetchInvestigationThread, sendInvestigationMessage, startInvestigation,
+  fetchInvestigationThread, sendInvestigationMessage, startInvestigation, applyInvestigationAction,
 } from '../../api/alertsApi';
 import './alerts.css';
 import '../transactions/transactions.css';
@@ -68,6 +68,7 @@ export default function AlertDetailPage({ updateAlert }) {
   const [showDismiss, setShowDismiss] = useState(false);
   const [dismissNotes, setDismissNotes] = useState('');
   const notesRef = useRef(null);
+  const previousResponseCountRef = useRef(0);
 
   // Sibling alert popup
   const [selectedSibling, setSelectedSibling] = useState(null);
@@ -102,6 +103,34 @@ export default function AlertDetailPage({ updateAlert }) {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    previousResponseCountRef.current = thread.filter(item => item.responseStatus === 'RESPONDED').length;
+  }, [id]);
+
+  useEffect(() => {
+    if (activeTab !== 'investigation') {
+      return;
+    }
+
+    const refreshThread = async () => {
+      try {
+        const latest = await fetchInvestigationThread(id);
+        const currentCount = latest.filter(item => item.responseStatus === 'RESPONDED').length;
+        if (currentCount > previousResponseCountRef.current) {
+          setActionSuccess('New customer response received.');
+        }
+        previousResponseCountRef.current = currentCount;
+        setThread(latest);
+      } catch {
+        // Silent polling failure: manual actions already surface actionable errors.
+      }
+    };
+
+    refreshThread();
+    const intervalId = setInterval(refreshThread, 10000);
+    return () => clearInterval(intervalId);
+  }, [activeTab, id]);
 
   useEffect(() => {
     if (showDismiss && notesRef.current) notesRef.current.focus();
@@ -159,6 +188,32 @@ export default function AlertDetailPage({ updateAlert }) {
       setActionError(err.message);
     } finally {
       setThreadLoading(false);
+      setWorking(false);
+    }
+  }
+
+  async function handleAnalystAction(action) {
+    setWorking(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      const result = await applyInvestigationAction(id, action, dismissNotes, composeSubject, composeBody);
+      if (result.alert) {
+        setAlert(result.alert);
+        if (updateAlert) updateAlert(result.alert);
+      }
+      const latestThread = await fetchInvestigationThread(id);
+      setThread(latestThread);
+      if (action === 'DISMISS') {
+        setActionSuccess('Alert dismissed from investigation workflow.');
+      } else if (action === 'FLAG') {
+        setActionSuccess('Alert escalated for deeper review.');
+      } else {
+        setActionSuccess('Follow-up outreach sent with a new response link.');
+      }
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
       setWorking(false);
     }
   }
@@ -228,6 +283,7 @@ export default function AlertDetailPage({ updateAlert }) {
   const tx   = alert?.transaction ?? {};
   const acct = tx.account ?? {};
   const payee = tx.payee ?? {};
+  const responseCount = thread.filter(item => item.responseStatus === 'RESPONDED').length;
 
   return (
     <div className="page-alert-detail">
@@ -304,6 +360,26 @@ export default function AlertDetailPage({ updateAlert }) {
 
               <div className="investigation-thread">
                 <h2 className="alert-detail-card-title">Investigation Thread</h2>
+                <div className="investigation-thread-summary">
+                  <span className="badge badge--acknowledged">Responses received: {responseCount}</span>
+                  <button
+                    className="btn btn--ghost btn--tiny"
+                    type="button"
+                    onClick={async () => {
+                      setThreadLoading(true);
+                      try {
+                        const latestThread = await fetchInvestigationThread(id);
+                        previousResponseCountRef.current = latestThread.filter(item => item.responseStatus === 'RESPONDED').length;
+                        setThread(latestThread);
+                      } finally {
+                        setThreadLoading(false);
+                      }
+                    }}
+                    disabled={working || threadLoading}
+                  >
+                    {threadLoading ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                </div>
                 {threadLoading && <div className="alerts-loading">Refreshing thread…</div>}
                 {!threadLoading && thread.length === 0 && (
                   <div className="alerts-empty">No outreach sent for this alert yet.</div>
@@ -325,9 +401,40 @@ export default function AlertDetailPage({ updateAlert }) {
                         </div>
                         <div className="investigation-thread-subject">{item.subject}</div>
                         <pre className="investigation-thread-body">{item.bodySnapshot}</pre>
+                        {item.responseStatus === 'RESPONDED' && (
+                          <div className="investigation-response-block">
+                            <div className="investigation-response-title">Customer Response</div>
+                            <div className="investigation-thread-meta">
+                              <span>Submitted: {fmtDate(item.respondedAt)}</span>
+                              <span>Name: {item.respondentName || '—'}</span>
+                              <span>Email: {item.respondentEmail || '—'}</span>
+                            </div>
+                            <dl className="investigation-response-grid">
+                              <dt>Recognized</dt>
+                              <dd>{item.recognizedTransaction == null ? '—' : item.recognizedTransaction ? 'Yes' : 'No'}</dd>
+                              <dt>Authorized</dt>
+                              <dd>{item.authorizedTransaction == null ? '—' : item.authorizedTransaction ? 'Yes' : 'No'}</dd>
+                            </dl>
+                            <pre className="investigation-thread-body">{item.responseExplanation || '—'}</pre>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {!isTerminal && (
+                  <div className="investigation-analyst-actions">
+                    <button className="btn btn--danger" onClick={() => handleAnalystAction('DISMISS')} disabled={working}>
+                      Dismiss
+                    </button>
+                    <button className="btn btn--secondary" onClick={() => handleAnalystAction('FLAG')} disabled={working}>
+                      Flag / Escalate
+                    </button>
+                    <button className="btn btn--ghost" onClick={() => handleAnalystAction('REQUEST_MORE_INFO')} disabled={working}>
+                      Request More Info
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

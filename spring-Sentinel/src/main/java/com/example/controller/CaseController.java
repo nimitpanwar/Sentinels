@@ -91,6 +91,16 @@ public class CaseController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /** Escalates an actively investigated case for deeper review. */
+    @PatchMapping("/{id}/escalate")
+    public ResponseEntity<Case> escalate(@PathVariable Integer id, @RequestBody(required = false) Map<String, String> body) {
+        String resolutionNotes = body != null ? body.get("resolutionNotes") : null;
+        ResolutionReasonCode reasonCode = parseReasonCode(body);
+        return alertManager.escalate(id, resolutionNotes, reasonCode)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     /** Parses the optional "resolutionReasonCode" field (fixed list - see enums.ResolutionReasonCode); returns null (not set) if absent or blank. */
     private ResolutionReasonCode parseReasonCode(Map<String, String> body) {
         if (body == null) {

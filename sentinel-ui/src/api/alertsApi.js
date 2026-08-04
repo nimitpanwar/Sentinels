@@ -72,3 +72,38 @@ export async function startInvestigation(id) {
   }
   return res.json();
 }
+
+export async function applyInvestigationAction(id, action, analystNotes = '', subject = '', body = '') {
+  const res = await fetch(`${BASE}/${id}/investigation/action`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, analystNotes, subject, body }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to apply investigation action: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchInvestigationResponseContext(token) {
+  const res = await fetch(`/api/investigation/respond/${token}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to fetch response context: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function submitInvestigationResponse(token, payload) {
+  const res = await fetch(`/api/investigation/respond/${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to submit response: ${res.status}`);
+  }
+  return res.json();
+}

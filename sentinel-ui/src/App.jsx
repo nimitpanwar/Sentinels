@@ -4,6 +4,7 @@ import NavBar from './components/NavBar';
 import TransactionsPage from './components/transactions/TransactionsPage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
+import CustomerResponsePage from './components/investigation/CustomerResponsePage';
 import { fetchAlerts } from './api/alertsApi';
 
 const STALE_MS = 30_000;
@@ -41,6 +42,17 @@ export default function App() {
     setAlerts(prev => prev.map(a => a.alertId === updated.alertId ? updated : a));
   }, []);
 
+  const isCustomerResponseRoute = window.location.pathname.startsWith('/investigation/respond/');
+
+  if (isCustomerResponseRoute) {
+    return (
+      <Routes>
+        <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
+        <Route path="*" element={<Navigate to="/investigation/respond/invalid" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <>
       <NavBar />
@@ -59,6 +71,7 @@ export default function App() {
         <Route path="/alerts/:id"
           element={<AlertDetailPage updateAlert={updateAlert} />}
         />
+        <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
         <Route path="*" element={<Navigate to="/transactions" replace />} />
       </Routes>
     </>
