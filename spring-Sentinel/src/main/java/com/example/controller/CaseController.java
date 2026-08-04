@@ -4,7 +4,6 @@ import com.example.entity.Alert;
 import com.example.entity.Case;
 import com.example.repository.AlertRepository;
 import com.example.dto.CaseStatsResponse;
-import com.example.entity.Case;
 import com.example.enums.CaseStatus;
 import com.example.enums.ResolutionReasonCode;
 import com.example.repository.CaseRepository;

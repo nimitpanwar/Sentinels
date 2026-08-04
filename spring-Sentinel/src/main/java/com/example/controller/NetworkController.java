@@ -28,13 +28,10 @@ import com.example.dto.NetworkTimelinePoint;
 import com.example.entity.Account;
 import com.example.entity.AccountNetworkScore;
 import com.example.entity.NetworkRun;
-import com.example.entity.NetworkRunRequest;
-import com.example.enums.NetworkRunRequestStatus;
 import com.example.enums.NetworkRunStatus;
 import com.example.repository.AccountNetworkScoreRepository;
 import com.example.repository.AccountRepository;
 import com.example.repository.NetworkRunRepository;
-import com.example.repository.NetworkRunRequestRepository;
 import com.example.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -61,7 +58,6 @@ public class NetworkController {
 
     private final NetworkRunRepository networkRunRepository;
     private final AccountNetworkScoreRepository scoreRepository;
-    private final NetworkRunRequestRepository runRequestRepository;
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
@@ -88,12 +84,10 @@ public class NetworkController {
 
     public NetworkController(NetworkRunRepository networkRunRepository,
                               AccountNetworkScoreRepository scoreRepository,
-                              NetworkRunRequestRepository runRequestRepository,
                               AccountRepository accountRepository,
                               TransactionRepository transactionRepository) {
         this.networkRunRepository = networkRunRepository;
         this.scoreRepository = scoreRepository;
-        this.runRequestRepository = runRequestRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
     }
@@ -144,7 +138,7 @@ public class NetworkController {
         List<TransactionRepository.SharedPayeeNeighbor> neighbors =
                 transactionRepository.findSharedPayeeNeighbors(accountId, since, PageRequest.of(0, graphMaxNeighbors));
 
-        List<Integer> neighborIds = neighbors.stream().map(TransactionRepository.SharedPayeeNeighbor::getNeighborId).toList();
+        List<Integer> neighborIds = neighbors.stream().map(n -> n.getNeighborId()).toList();
         Map<Integer, Account> neighborAccounts = new HashMap<>();
         accountRepository.findAllById(neighborIds).forEach(a -> neighborAccounts.put(a.getAccountId(), a));
 
@@ -270,7 +264,7 @@ public class NetworkController {
     }
 
     private NetworkScoreResponse toResponse(AccountNetworkScore s) {
-        String accountNumber = accountRepository.findById(s.getAccountId()).map(Account::getAccountNumber).orElse(null);
+        String accountNumber = accountRepository.findById(s.getAccountId()).map(a -> a.getAccountNumber()).orElse(null);
         return new NetworkScoreResponse(
                 s.getRunId(), s.getAccountId(), accountNumber, s.getNetworkRiskScore(),
                 s.getPageRankPercentile(), s.getSharedPayeeCount(), s.getCommunityId(), s.getCommunitySize(),

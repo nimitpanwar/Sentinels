@@ -38,6 +38,6 @@ public class RiskResult {
     public LocalDateTime getTransactionTimestamp() { return transactionTimestamp; }
 
     public List<RuleResult> getTriggeredRules() {
-        return ruleResults.stream().filter(RuleResult::isTriggered).toList();
+        return ruleResults.stream().filter(r -> r.isTriggered()).toList();
     }
 }

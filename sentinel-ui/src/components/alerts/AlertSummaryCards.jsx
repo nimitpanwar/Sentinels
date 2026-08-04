@@ -2,8 +2,8 @@ export default function AlertSummaryCards({ alerts }) {
   const today = new Date().toDateString();
 
   const open      = alerts.filter(a => a.status === 'OPEN').length;
-  const inReview  = alerts.filter(a => a.status === 'IN_REVIEW').length;
-  const escalated = alerts.filter(a => a.status === 'ESCALATED').length;
+  const inReview  = alerts.filter(a => a.status === 'ACKNOWLEDGED').length;
+  const escalated = alerts.filter(a => a.status === 'INVESTIGATING').length;
   const todayCount = alerts.filter(a => {
     if (!a.createdAt) return false;
     return new Date(a.createdAt).toDateString() === today;

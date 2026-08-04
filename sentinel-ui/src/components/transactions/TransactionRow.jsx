@@ -82,6 +82,7 @@ export default function TransactionRow({ tx }) {
         <td className="tx-cell">{fmt(tx.transactionTimestamp)}</td>
         <td className="tx-cell mono">{tx.accountNumber ?? '—'}</td>
         <td className="tx-cell">{tx.payeeName ?? '—'}</td>
+        <td className="tx-cell mono" style={{ fontSize: '0.78em', color: '#6b7280' }}>{tx.payeeIdentifier ?? '—'}</td>
         <td className="tx-cell num">
           {tx.amount != null ? Number(tx.amount).toFixed(2) : '—'}
           {' '}

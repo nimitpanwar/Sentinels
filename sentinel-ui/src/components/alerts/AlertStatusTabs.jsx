@@ -1,9 +1,8 @@
 const TABS = [
   { key: 'ALL',       label: 'All' },
   { key: 'OPEN',      label: 'Open' },
-  { key: 'IN_REVIEW', label: 'In Review' },
-  { key: 'ESCALATED', label: 'Escalated' },
-  { key: 'CLOSED',    label: 'Closed' },
+  { key: 'ACKNOWLEDGED', label: 'In Review' },
+  { key: 'INVESTIGATING', label: 'Escalated' },
 ];
 
 export default function AlertStatusTabs({ activeTab, onTabChange }) {

@@ -5,14 +5,15 @@
  * The Vite proxy forwards /api/* to http://localhost:8080, so no
  * base URL needs to be configured here.
  *
- * Spring's Page response shape:
+ * Spring's Page response shape (VIA_DTO format):
  * {
  *   content: [ ...TransactionResponse objects... ],
- *   totalElements: 3847,
- *   totalPages: 77,
- *   last: false,      // true when this is the final page
- *   number: 0,        // current page index (0-based)
- *   size: 50
+ *   page: {
+ *     size: 50,
+ *     number: 0,        // current page index (0-based)
+ *     totalElements: 3847,
+ *     totalPages: 77,
+ *   }
  * }
  */
 

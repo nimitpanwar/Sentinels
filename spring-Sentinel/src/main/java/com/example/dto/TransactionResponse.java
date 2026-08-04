@@ -55,6 +55,12 @@ public class TransactionResponse {
     private String caseSeverity;
     private String caseStatus;
 
+    // ---- Display fields (denormalised from Account/Customer/Payee for table rendering) ----
+    private String accountNumber;
+    private String customerName;
+    private String payeeName;
+    private String payeeIdentifier;
+
     public Integer getTransactionId() { return transactionId; }
     public void setTransactionId(Integer transactionId) { this.transactionId = transactionId; }
     public Integer getAccountId() { return accountId; }
@@ -97,6 +103,14 @@ public class TransactionResponse {
     public void setCaseSeverity(String caseSeverity) { this.caseSeverity = caseSeverity; }
     public String getCaseStatus() { return caseStatus; }
     public void setCaseStatus(String caseStatus) { this.caseStatus = caseStatus; }
+    public String getAccountNumber() { return accountNumber; }
+    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public String getPayeeName() { return payeeName; }
+    public void setPayeeName(String payeeName) { this.payeeName = payeeName; }
+    public String getPayeeIdentifier() { return payeeIdentifier; }
+    public void setPayeeIdentifier(String payeeIdentifier) { this.payeeIdentifier = payeeIdentifier; }
 
     public static Builder builder() {
         return new Builder();
@@ -127,6 +141,10 @@ public class TransactionResponse {
         public Builder caseId(Integer caseId) { resp.caseId = caseId; return this; }
         public Builder caseSeverity(String caseSeverity) { resp.caseSeverity = caseSeverity; return this; }
         public Builder caseStatus(String caseStatus) { resp.caseStatus = caseStatus; return this; }
+        public Builder accountNumber(String accountNumber) { resp.accountNumber = accountNumber; return this; }
+        public Builder customerName(String customerName) { resp.customerName = customerName; return this; }
+        public Builder payeeName(String payeeName) { resp.payeeName = payeeName; return this; }
+        public Builder payeeIdentifier(String payeeIdentifier) { resp.payeeIdentifier = payeeIdentifier; return this; }
 
         public TransactionResponse build() { return resp; }
     }

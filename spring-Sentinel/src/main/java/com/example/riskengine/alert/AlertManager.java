@@ -167,6 +167,9 @@ public class AlertManager {
     // case, are both deliberately rejected rather than silently allowed):
     //
     //   OPEN -> ACKNOWLEDGED -> INVESTIGATING -> CLOSED
+    //     |            |
+    //     v            v
+    // INVESTIGATING  DISMISSED
     //              |                 |
     //              v                 v
     //          DISMISSED         DISMISSED
@@ -174,7 +177,9 @@ public class AlertManager {
     // CLOSED and DISMISSED are terminal - no outgoing transitions.
 
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = Map.of(
-            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED),
+            // OPEN -> INVESTIGATING is allowed for one-click analyst takeover
+            // from the alert detail page's Investigate action.
+            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING),
             CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.CLOSED, CaseStatus.DISMISSED),
             CaseStatus.INVESTIGATING, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
             // CLOSED, DISMISSED: intentionally absent - terminal states.

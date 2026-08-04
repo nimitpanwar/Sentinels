@@ -1,10 +1,18 @@
 package com.example.controller;
 
+import com.example.dto.InvestigationMessageResponse;
+import com.example.dto.InvestigationSendRequest;
+import com.example.dto.InvestigationSendResponse;
 import com.example.entity.Alert;
+import com.example.entity.Case;
 import com.example.entity.RuleEvaluation;
 import com.example.enums.CaseStatus;
 import com.example.repository.AlertRepository;
 import com.example.repository.RuleEvaluationRepository;
+import com.example.riskengine.alert.AlertManager;
+import com.example.riskengine.alert.InvalidCaseTransitionException;
+import com.example.service.InvestigationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +35,17 @@ public class AlertController {
 
     private final AlertRepository alertRepository;
     private final RuleEvaluationRepository ruleEvaluationRepository;
+    private final InvestigationService investigationService;
+    private final AlertManager alertManager;
 
-    public AlertController(AlertRepository alertRepository, RuleEvaluationRepository ruleEvaluationRepository) {
+    public AlertController(AlertRepository alertRepository,
+                           RuleEvaluationRepository ruleEvaluationRepository,
+                           InvestigationService investigationService,
+                           AlertManager alertManager) {
         this.alertRepository = alertRepository;
         this.ruleEvaluationRepository = ruleEvaluationRepository;
+        this.investigationService = investigationService;
+        this.alertManager = alertManager;
     }
 
     @GetMapping
@@ -73,11 +88,24 @@ public class AlertController {
                 return ResponseEntity.badRequest().body("Missing 'status' field");
             }
 
+            String scope = body.getOrDefault("updateScope", "ALERT");
             CaseStatus target;
             try {
                 target = CaseStatus.valueOf(rawStatus.toUpperCase());
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().body("Unknown status: " + rawStatus);
+            }
+
+            if ("CASE".equalsIgnoreCase(scope)) {
+                Case aCase = alert.getCase();
+                if (aCase == null) {
+                    return ResponseEntity.badRequest().body("Cannot apply CASE scope: alert has no case");
+                }
+                String notes = body.get("resolutionNotes");
+                applyCaseScopedTransition(aCase.getCaseId(), target, notes);
+                return alertRepository.findById(id)
+                        .<ResponseEntity<?>>map(ResponseEntity::ok)
+                        .orElseGet(() -> ResponseEntity.notFound().build());
             }
 
             if (!isTransitionAllowed(alert.getStatus(), target)) {
@@ -102,6 +130,20 @@ public class AlertController {
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    private void applyCaseScopedTransition(Integer caseId, CaseStatus target, String notes) {
+    switch (target) {
+        case ACKNOWLEDGED -> alertManager.acknowledge(caseId)
+            .orElseThrow(() -> new IllegalArgumentException("Case not found: " + caseId));
+        case INVESTIGATING -> alertManager.investigate(caseId)
+            .orElseThrow(() -> new IllegalArgumentException("Case not found: " + caseId));
+        case DISMISSED -> alertManager.dismiss(caseId, notes, null)
+            .orElseThrow(() -> new IllegalArgumentException("Case not found: " + caseId));
+        case CLOSED -> alertManager.close(caseId, notes, null)
+            .orElseThrow(() -> new IllegalArgumentException("Case not found: " + caseId));
+        default -> throw new IllegalArgumentException("Unsupported CASE scope target status: " + target);
+    }
+    }
+
     /** Valid lifecycle transitions. */
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED = Map.of(
             CaseStatus.OPEN,         Set.of(CaseStatus.ACKNOWLEDGED),
@@ -111,6 +153,35 @@ public class AlertController {
     private boolean isTransitionAllowed(CaseStatus from, CaseStatus to) {
         Set<CaseStatus> allowed = ALLOWED.get(from);
         return allowed != null && allowed.contains(to);
+    }
+
+    /** Sends an analyst-crafted customer outreach email for this alert investigation. */
+    @PostMapping("/{id}/investigation/send")
+    public ResponseEntity<InvestigationSendResponse> sendInvestigationMessage(@PathVariable Integer id,
+                                                                              @RequestBody InvestigationSendRequest request) {
+        return ResponseEntity.ok(investigationService.send(id, request));
+    }
+
+    /** Marks an alert/case as actively investigating from the detail page action. */
+    @PatchMapping("/{id}/investigation/start")
+    public ResponseEntity<Alert> startInvestigation(@PathVariable Integer id) {
+        return ResponseEntity.ok(investigationService.markInvestigating(id));
+    }
+
+    /** Returns recorded outreach thread items for this alert, newest first. */
+    @GetMapping("/{id}/investigation/thread")
+    public ResponseEntity<List<InvestigationMessageResponse>> getInvestigationThread(@PathVariable Integer id) {
+        return ResponseEntity.ok(investigationService.getThread(id));
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<Map<String, String>> handleInvestigationRequestErrors(RuntimeException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCaseTransitionException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTransition(InvalidCaseTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 }
 

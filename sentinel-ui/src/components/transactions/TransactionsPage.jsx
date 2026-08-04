@@ -56,8 +56,9 @@ export default function TransactionsPage() {
           return true;
         });
         setRows(merged);
-        // If either page was the last, there are no more pages
-        setHasMore(!page1.last && page1.content.length === INITIAL_SIZE);
+        // VIA_DTO format: last = (page.number + 1) >= page.totalPages
+        const isLast = (p) => (p.page.number + 1) >= p.page.totalPages;
+        setHasMore(!isLast(page1) && page1.content.length === INITIAL_SIZE);
         setNextPage(2);
       })
       .catch((err) => {
@@ -82,7 +83,8 @@ export default function TransactionsPage() {
           const fresh = page.content.filter((t) => !seen.has(t.transactionId));
           return [...prev, ...fresh];
         });
-        setHasMore(!page.last && page.content.length === MORE_SIZE);
+        const isLast = (page.page.number + 1) >= page.page.totalPages;
+        setHasMore(!isLast && page.content.length === MORE_SIZE);
         setNextPage((p) => p + 1);
       })
       .catch((err) => setError(err.message))
