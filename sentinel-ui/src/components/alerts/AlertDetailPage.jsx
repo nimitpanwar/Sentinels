@@ -350,7 +350,7 @@ export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
       if (scope === 'CASE') {
         updated = await updateAlertStatus(id, 'INVESTIGATING', '', 'CASE');
       } else {
-        updated = await startInvestigation(id);
+        updated = await updateAlertStatus(id, 'INVESTIGATING');
       }
       setAlert(updated);
       if (updateAlert) updateAlert(updated);

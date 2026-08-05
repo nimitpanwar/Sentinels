@@ -74,6 +74,53 @@
   }
 }
 
+.alerts-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alerts-tab-export-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.alerts-export-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alerts-export-label {
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.alerts-export-format {
+  min-width: 84px;
+}
+
+@media (max-width: 860px) {
+  .alerts-header-right {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .alerts-tab-export-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alerts-export-controls {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
 /* ── Summary cards ────────────────────────────────────────────── */
 .alert-cards {
   display: grid;
@@ -218,6 +265,13 @@
   border-radius: 2px;
   background: var(--bg-panel);
   padding: 16px;
+}
+
+.investigation-panel > .investigation-compose,
+.investigation-panel > .investigation-profile-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .investigation-panel > .investigation-compose,
