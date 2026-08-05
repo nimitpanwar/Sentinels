@@ -1,7 +1,62 @@
-/* ── Navigation shell: fixed vertical sidebar ─────────────────── */
-.navbar {
+/* ── Persistent top bar: brand + drawer toggle (always visible) ── */
+.topbar {
   position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-height, 48px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  background: var(--bg-surface, #1a1b1f);
+  border-bottom: 1px solid var(--border-color, #38393d);
+  z-index: 300;
+}
+
+.topbar-toggle {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color, #38393d);
+  border-radius: var(--radius, 2px);
+  color: var(--text-primary, #ffffff);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.topbar-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-dim, #8a8d91);
+}
+
+.topbar-brand {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary, #ffffff);
+  user-select: none;
+}
+
+/* ── Backdrop shown behind the open drawer ───────────────────────── */
+.navbar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+}
+
+/* ── Sliding nav drawer: off-canvas by default, slides in on toggle ── */
+.navbar {
+  position: fixed;
+  top: var(--topbar-height, 48px);
   left: 0;
   bottom: var(--statusbar-height, 28px);
   width: var(--sidebar-width, 212px);
@@ -10,18 +65,14 @@
   background: var(--bg-surface, #1a1b1f);
   border-right: 1px solid var(--border-color, #38393d);
   overflow-y: auto;
-  z-index: 100;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
 }
 
-.navbar-brand {
-  padding: 22px 20px 18px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-primary, #ffffff);
-  border-bottom: 1px solid var(--border-color, #38393d);
-  user-select: none;
+.navbar--open {
+  transform: translateX(0);
 }
 
 .navbar-links {

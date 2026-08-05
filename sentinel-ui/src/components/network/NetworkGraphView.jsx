@@ -61,7 +61,7 @@ export default function NetworkGraphView({ graph, onSelectNode }) {
       {positioned.map((n) => (
         <g key={`node-${n.accountId}`} onClick={() => onSelectNode?.(n.accountId)} style={{ cursor: 'pointer' }}>
           <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#121317" strokeWidth={1.5} />
-          <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#8a8d91">
+          <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#ffffff">
             {n.accountNumber || `#${n.accountId}`}
           </text>
         </g>

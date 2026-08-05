@@ -10,8 +10,8 @@
   --bg-surface-alt: #202127;
   --bg-deepest: #0d0e12;
   --text-primary: #ffffff;
-  --text-dim: #8a8d91;
-  --text-dimmer: #5b5d62;
+  --text-dim: #ffffff;
+  --text-dimmer: #ffffff;
   --accent-critical: #ff4c4c;
   --accent-success: #00ff88;
   --accent-warning: #ffcc00;
@@ -24,6 +24,7 @@
   /* Spacing / shape */
   --radius: 2px;
   --sidebar-width: 212px;
+  --topbar-height: 48px;
   --statusbar-height: 28px;
 }
 
@@ -47,9 +48,11 @@ body {
   color: #ffffff;
 }
 
-/* Content area to the right of the fixed sidebar / above the status bar */
+/* Content area below the fixed top bar / above the status bar. The
+   sidebar nav is now an off-canvas drawer that slides over this content
+   rather than permanently reserving space, so there's no margin-left. */
 .app-content {
-  margin-left: var(--sidebar-width);
+  padding-top: var(--topbar-height);
   min-height: 100vh;
   padding-bottom: var(--statusbar-height);
   background: var(--bg-primary);
