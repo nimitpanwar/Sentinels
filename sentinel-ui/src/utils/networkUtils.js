@@ -4,11 +4,11 @@
  * Shared helpers for the Network Insights page components.
  */
 export function riskColor(score) {
-  if (score === null || score === undefined) return '#70809c';
-  if (score >= 75) return '#ff7f96';
-  if (score >= 60) return '#ffbf69';
-  if (score >= 40) return '#77a8ff';
-  return '#4dd6c0';
+  if (score === null || score === undefined) return '#ffffff';
+  if (score >= 75) return '#ff4c4c';
+  if (score >= 60) return '#ffcc00';
+  if (score >= 40) return '#b38f00';
+  return '#00ff88';
 }
 
 export function riskBucket(score) {

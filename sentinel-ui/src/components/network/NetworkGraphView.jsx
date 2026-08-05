@@ -51,7 +51,7 @@ export default function NetworkGraphView({ graph, onSelectNode, showLabels = tru
             y1={CENTER_Y}
             x2={n.x}
             y2={n.y}
-            stroke="rgba(119, 168, 255, 0.36)"
+            stroke="rgba(0, 255, 136, 0.32)"
             strokeWidth={weight}
           />
         );
@@ -60,9 +60,9 @@ export default function NetworkGraphView({ graph, onSelectNode, showLabels = tru
       {/* Neighbor nodes */}
       {positioned.map((n) => (
         <g key={`node-${n.accountId}`} onClick={() => onSelectNode?.(n.accountId)} style={{ cursor: 'pointer' }}>
-          <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#09111e" strokeWidth={1.5} />
+          <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#0d0e12" strokeWidth={1.5} />
           {showLabels && (
-            <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#9fafc7">
+            <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#ffffff">
               {n.accountNumber || `#${n.accountId}`}
             </text>
           )}
@@ -70,9 +70,9 @@ export default function NetworkGraphView({ graph, onSelectNode, showLabels = tru
       ))}
 
       {/* Center node (drawn last, on top) */}
-      <circle cx={CENTER_X} cy={CENTER_Y} r={15} fill="#77a8ff" stroke="#09111e" strokeWidth={2} />
+      <circle cx={CENTER_X} cy={CENTER_Y} r={15} fill="#00ff88" stroke="#0d0e12" strokeWidth={2} />
       {showLabels && (
-        <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#edf3ff">
+        <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
           {center.accountNumber || `#${center.accountId}`}
         </text>
       )}

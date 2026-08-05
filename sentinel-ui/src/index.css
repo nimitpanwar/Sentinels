@@ -1,39 +1,71 @@
+/* ================================================================
+   Global design tokens — "Sentinel Command Center" theme.
+   See notes/UIDesign.md for the source specification.
+   ================================================================ */
+
+:root {
+  /* Color palette */
+  --bg-primary: #121317;
+  --bg-surface: #1a1b1f;
+  --bg-surface-alt: #202127;
+  --bg-deepest: #0d0e12;
+  --text-primary: #ffffff;
+  --text-dim: #ffffff;
+  --text-dimmer: #ffffff;
+  --accent-critical: #ff4c4c;
+  --accent-success: #00ff88;
+  --accent-warning: #ffcc00;
+  --border-color: #38393d;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', 'Courier New', Courier, monospace;
+
+  /* Spacing / shape */
+  --radius: 2px;
+  --sidebar-width: 212px;
+  --topbar-height: 48px;
+  --statusbar-height: 28px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 :root {
   --font-sans: "Inter", "Segoe UI", "SF Pro Display", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --font-mono: "JetBrains Mono", "Roboto Mono", "SFMono-Regular", Consolas, monospace;
 
-  --bg-app: #070b14;
-  --bg-elevated: #101726;
-  --bg-panel: #131c2d;
-  --bg-panel-2: #172235;
-  --bg-overlay: rgba(7, 11, 20, 0.84);
+  /* Sentinel Command Center palette — see notes/UIDesign.md */
+  --bg-app: #121317;
+  --bg-elevated: #1a1b1f;
+  --bg-panel: #1a1b1f;
+  --bg-panel-2: #202126;
+  --bg-deep: #0d0e12;
+  --bg-overlay: rgba(13, 14, 18, 0.86);
 
-  --text-primary: #edf3ff;
-  --text-secondary: #9fafc7;
-  --text-muted: #70809c;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #ffffff;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(126, 168, 255, 0.28);
+  --border-subtle: #38393d;
+  --border-strong: rgba(0, 255, 136, 0.35);
 
-  --accent: #77a8ff;
-  --accent-strong: #9cc2ff;
-  --accent-soft: rgba(119, 168, 255, 0.14);
-  --teal: #4dd6c0;
-  --amber: #ffbf69;
-  --red: #ff7f96;
-  --green: #67e8a6;
+  --accent: #00ff88;
+  --accent-strong: #33ffa1;
+  --accent-soft: rgba(0, 255, 136, 0.14);
+  --teal: #00ff88;
+  --amber: #ffcc00;
+  --red: #ff4c4c;
+  --green: #00ff88;
 
-  --shadow-panel: 0 22px 50px rgba(0, 0, 0, 0.32);
-  --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.22);
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.35);
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
-  --radius-pill: 999px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-pill: 2px;
 
   --space-2: 8px;
   --space-3: 12px;
@@ -43,15 +75,13 @@
   --space-8: 32px;
 
   --drawer-width: 292px;
-  --topbar-height: 74px;
+  --topbar-height: 128px;
   --statusbar-height: 52px;
 }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top right, rgba(119, 168, 255, 0.16), transparent 28%),
-    linear-gradient(180deg, #08101d 0%, #05080f 100%);
+  background: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-sans);
 }
@@ -81,9 +111,11 @@ a {
 
 .page-title {
   margin: 0;
-  font-size: clamp(1.7rem, 2vw, 2.25rem);
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .row-count,
@@ -105,14 +137,36 @@ a {
   box-shadow: var(--shadow-soft);
 }
 
-/* ── Top-level page nav (Transactions / Network Insights) ────────────── */
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--accent-critical);
+  color: #ffffff;
+}
+
+/* Content area below the fixed top bar / above the status bar. The
+   sidebar nav is now an off-canvas drawer that slides over this content
+   rather than permanently reserving space, so there's no margin-left. */
+.app-content {
+  padding-top: var(--topbar-height);
+  min-height: 100vh;
+  padding-bottom: var(--statusbar-height);
+  background: var(--bg-primary);
+}
+
+/* ── Top-level page nav (legacy tab strip, kept for reuse) ────────────── */
 
 .app-nav {
   display: flex;
   gap: 4px;
   padding: 12px 32px 0;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .app-nav-tab {
@@ -120,17 +174,19 @@ a {
   border: none;
   border-bottom: 2px solid transparent;
   padding: 10px 14px;
-  font-size: 0.95em;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .app-nav-tab:hover {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .app-nav-tab.is-active {
-  color: #1e40af;
-  border-bottom-color: #1e40af;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }

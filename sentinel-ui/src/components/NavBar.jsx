@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import './NavBar.css';
 
 export default function NavBar({ drawerOpen, setDrawerOpen }) {
@@ -10,23 +11,29 @@ export default function NavBar({ drawerOpen, setDrawerOpen }) {
     { to: '/alerts', label: 'Alerts', code: '03' },
     { to: '/alert-history', label: 'Alert History', code: '04' },
     { to: '/network', label: 'Network Insights', code: '05' },
+    { to: '/agent', label: 'Agent', code: '06' },
   ];
 
   return (
     <>
       <header className="cc-topbar">
-        <button
-          type="button"
-          className="cc-menu-toggle"
-          onClick={() => setDrawerOpen(open => !open)}
-          aria-label="Toggle navigation"
-          aria-expanded={drawerOpen}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-        <div>
+        <div className="cc-topbar__left">
+          <Link to="/overview" className="cc-topbar__logo-link" aria-label="Go to Overview">
+            <img src={logo} alt="Sentinel" className="cc-topbar__logo" />
+          </Link>
+          <button
+            type="button"
+            className="cc-menu-toggle"
+            onClick={() => setDrawerOpen(open => !open)}
+            aria-label="Toggle navigation"
+            aria-expanded={drawerOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+        <div className="cc-topbar__titleblock">
           <div className="cc-topbar__eyebrow">Sentinel Command Center</div>
           <div className="cc-topbar__title">Fraud Monitoring Operations</div>
         </div>
@@ -70,3 +77,4 @@ export default function NavBar({ drawerOpen, setDrawerOpen }) {
     </>
   );
 }
+

@@ -22,15 +22,15 @@ export default function OverviewLineChart({ points }) {
       <svg className="overview-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Alert creation trend line chart">
         <defs>
           <linearGradient id="overviewArea" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(119,168,255,0.40)" />
-            <stop offset="100%" stopColor="rgba(119,168,255,0.04)" />
+            <stop offset="0%" stopColor="rgba(0,255,136,0.35)" />
+            <stop offset="100%" stopColor="rgba(0,255,136,0.03)" />
           </linearGradient>
         </defs>
         <path d={area} fill="url(#overviewArea)" />
-        <path d={path} fill="none" stroke="#77a8ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke="#00ff88" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         {coordinates.map((point) => (
           <g key={point.label}>
-            <circle cx={point.x} cy={point.y} r="4.5" fill="#9cc2ff" />
+            <circle cx={point.x} cy={point.y} r="4.5" fill="#33ffa1" />
             <text x={point.x} y={height - 8} textAnchor="middle" className="overview-chart__label">{point.label}</text>
           </g>
         ))}

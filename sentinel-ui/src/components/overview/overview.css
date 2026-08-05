@@ -14,7 +14,7 @@
 .overview-panel,
 .overview-card {
   border: 1px solid var(--border-subtle);
-  background: linear-gradient(180deg, rgba(19, 28, 45, 0.96), rgba(16, 23, 38, 0.96));
+  background: linear-gradient(180deg, rgba(26, 27, 31, 0.96), rgba(13, 14, 18, 0.96));
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
 }

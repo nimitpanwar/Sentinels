@@ -6,6 +6,7 @@ import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
 import AlertHistoryPage from './components/alerts/AlertHistoryPage';
 import NetworkPage from './components/network/NetworkPage';
+import AgentPage from './components/agent/AgentPage';
 import OverviewPage from './components/overview/OverviewPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
 import { fetchAlerts } from './api/alertsApi';
@@ -86,6 +87,7 @@ export default function App() {
           />
           <Route path="/alert-history" element={<AlertHistoryPage />} />
           <Route path="/network" element={<NetworkPage />} />
+          <Route path="/agent" element={<AgentPage />} />
           <Route path="/alerts/:id"
             element={<AlertDetailPage updateAlert={updateAlert} refreshAlerts={loadAlerts} />}
           />
