@@ -4,9 +4,12 @@ import com.example.entity.Alert;
 import com.example.entity.Case;
 import com.example.entity.Transaction;
 import com.example.enums.CaseStatus;
+import com.example.enums.InvestigationMessageStatus;
 import com.example.enums.ResolutionReasonCode;
+import com.example.enums.Severity;
 import com.example.repository.AlertRepository;
 import com.example.repository.CaseRepository;
+import com.example.repository.InvestigationMessageRepository;
 import com.example.riskengine.config.AlertConfig;
 import com.example.riskengine.model.RiskResult;
 import org.slf4j.Logger;
@@ -49,11 +52,16 @@ public class AlertManager {
     private final AlertConfig alertConfig;
     private final AlertRepository alertRepository;
     private final CaseRepository caseRepository;
+    private final InvestigationMessageRepository investigationMessageRepository;
 
-    public AlertManager(AlertConfig alertConfig, AlertRepository alertRepository, CaseRepository caseRepository) {
+    public AlertManager(AlertConfig alertConfig,
+                        AlertRepository alertRepository,
+                        CaseRepository caseRepository,
+                        InvestigationMessageRepository investigationMessageRepository) {
         this.alertConfig = alertConfig;
         this.alertRepository = alertRepository;
         this.caseRepository = caseRepository;
+        this.investigationMessageRepository = investigationMessageRepository;
     }
 
     /**
@@ -179,7 +187,9 @@ public class AlertManager {
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = Map.of(
             // OPEN -> INVESTIGATING is allowed for one-click analyst takeover
             // from the alert detail page's Investigate action.
-            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING),
+            // OPEN -> DISMISSED is also allowed for immediate false-positive handling.
+            // OPEN -> ESCALATED is allowed for immediate escalation from investigation actions.
+            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING, CaseStatus.DISMISSED, CaseStatus.ESCALATED),
             CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
             CaseStatus.INVESTIGATING, Set.of(CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
             CaseStatus.ESCALATED, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
@@ -188,37 +198,67 @@ public class AlertManager {
 
     @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null);
+        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null, null);
     }
 
     /** "Mark as Investigating" - moves an already-acknowledged case into active investigation. */
     @Transactional
     public Optional<Case> investigate(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null);
+        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null, null);
     }
 
     @Transactional
     public Optional<Case> close(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode, null);
     }
 
     /** Marks the case a false positive / not requiring action - a terminal state distinct from CLOSED. */
     @Transactional
     public Optional<Case> dismiss(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode, null);
+    }
+
+    /**
+     * Dismiss variant for alert-scoped workflows where gating must follow
+     * the selected alert severity instead of merged case severity.
+     */
+    @Transactional
+    public Optional<Case> dismissWithSeverity(Integer caseId,
+                                              String resolutionNotes,
+                                              ResolutionReasonCode reasonCode,
+                                              Severity gatingSeverity) {
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode, gatingSeverity);
     }
 
     /** Escalates the case for deeper/manual review while keeping it active. */
     @Transactional
     public Optional<Case> escalate(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.ESCALATED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.ESCALATED, resolutionNotes, reasonCode, null);
     }
 
-    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes, ResolutionReasonCode reasonCode) {
+    @Transactional
+    public Case saveCase(Case aCase) {
+        return caseRepository.save(aCase);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Case> findCase(Integer caseId) {
+        return caseRepository.findById(caseId);
+    }
+
+    private Optional<Case> updateCaseStatus(Integer caseId,
+                                            CaseStatus newStatus,
+                                            String resolutionNotes,
+                                            ResolutionReasonCode reasonCode,
+                                            Severity gatingSeverityOverride) {
         return caseRepository.findById(caseId).map(c -> {
             CaseStatus currentStatus = c.getStatus();
             if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
                 throw new InvalidCaseTransitionException(currentStatus, newStatus);
+            }
+
+            if (newStatus == CaseStatus.CLOSED || newStatus == CaseStatus.DISMISSED) {
+                enforceSeverityGates(c, newStatus, gatingSeverityOverride);
             }
 
             c.setStatus(newStatus);
@@ -243,6 +283,42 @@ public class AlertManager {
 
             return saved;
         });
+    }
+
+    private void enforceSeverityGates(Case aCase, CaseStatus targetStatus, Severity gatingSeverityOverride) {
+        Severity severity = gatingSeverityOverride != null
+                ? gatingSeverityOverride
+                : (aCase.getSeverity() == null ? Severity.LOW : aCase.getSeverity());
+
+        if (isBlank(aCase.getInvestigationAnalystNote())) {
+            throw new IllegalStateException("Add analyst note before setting case to " + targetStatus);
+        }
+
+        if (severity == Severity.MID || severity == Severity.HIGH) {
+            boolean outreachSent = investigationMessageRepository.existsByACaseCaseIdAndDeliveryStatus(
+                    aCase.getCaseId(), InvestigationMessageStatus.SENT);
+            if (!outreachSent) {
+                throw new IllegalStateException("Send outreach before setting " + severity + " case to " + targetStatus);
+            }
+            if (!Boolean.TRUE.equals(aCase.getInvestigationChecklistComplete())) {
+                throw new IllegalStateException("Complete investigation checklist before setting " + severity + " case to " + targetStatus);
+            }
+        }
+
+        if (severity == Severity.HIGH) {
+            if (isBlank(aCase.getHighRiskJustification())
+                    || aCase.getHighRiskAcknowledgedAt() == null
+                    || aCase.getHighRiskSecondConfirmAt() == null) {
+                throw new IllegalStateException("Complete high-risk self-approval before setting case to " + targetStatus);
+            }
+            if (aCase.getHighRiskCooldownUntil() == null || aCase.getHighRiskCooldownUntil().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
+                throw new IllegalStateException("Wait for high-risk cooldown to finish before setting case to " + targetStatus);
+            }
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
 

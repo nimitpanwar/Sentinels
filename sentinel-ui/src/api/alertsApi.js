@@ -6,9 +6,24 @@ export async function fetchAlerts() {
   return res.json();
 }
 
+export async function fetchDismissedAlerts() {
+  const res = await fetch(`${BASE}/dismissed`);
+  if (!res.ok) throw new Error(`Failed to fetch dismissed alerts: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchAlert(id) {
   const res = await fetch(`${BASE}/${id}`);
   if (!res.ok) throw new Error(`Failed to fetch alert ${id}: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchAlertHistory(id) {
+  const res = await fetch(`${BASE}/${id}/history`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to fetch alert history ${id}: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -73,15 +88,50 @@ export async function startInvestigation(id) {
   return res.json();
 }
 
-export async function applyInvestigationAction(id, action, analystNotes = '', subject = '', body = '') {
+export async function applyInvestigationAction(id, action, analystNotes = '', subject = '', body = '', updateScope = 'ALERT') {
   const res = await fetch(`${BASE}/${id}/investigation/action`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, analystNotes, subject, body }),
+    body: JSON.stringify({ action, analystNotes, subject, body, updateScope }),
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Failed to apply investigation action: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchInvestigationProfile(id) {
+  const res = await fetch(`${BASE}/${id}/investigation/profile`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to fetch investigation profile: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateInvestigationProfile(id, payload) {
+  const res = await fetch(`${BASE}/${id}/investigation/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to update investigation profile: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function submitHighRiskSelfApproval(id, payload) {
+  const res = await fetch(`${BASE}/${id}/investigation/high-risk-self-approval`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to submit high-risk self-approval: ${res.status}`);
   }
   return res.json();
 }

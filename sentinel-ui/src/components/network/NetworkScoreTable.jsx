@@ -5,7 +5,7 @@
  * network-analysis run. Row click selects an account, driving the detail
  * panel + neighborhood graph below (see NetworkPage.jsx).
  */
-import { riskColor } from '../../utils/networkUtils';
+import { dominantSignalLabel, formatTimestamp, freshnessLabel, riskBucket, riskColor } from '../../utils/networkUtils';
 
 export default function NetworkScoreTable({ rows, selectedAccountId, onSelect }) {
   if (rows.length === 0) {
@@ -18,6 +18,7 @@ export default function NetworkScoreTable({ rows, selectedAccountId, onSelect })
         <tr>
           <th>Account</th>
           <th>Network Risk Score</th>
+          <th>Risk Context</th>
           <th>Shared Payees</th>
           <th>Community Size</th>
           <th>Growth %ile</th>
@@ -47,10 +48,25 @@ export default function NetworkScoreTable({ rows, selectedAccountId, onSelect })
               </span>
               <span className="num">{row.networkRiskScore}</span>
             </td>
+            <td>
+              <div className="network-table-context">
+                <span className={`network-pill network-pill--${riskBucket(row.networkRiskScore).toLowerCase()}`}>
+                  {riskBucket(row.networkRiskScore)}
+                </span>
+                <span className="network-context-sub">{dominantSignalLabel(row)}</span>
+              </div>
+            </td>
             <td className="num">{row.sharedPayeeCount ?? '—'}</td>
             <td className="num">{row.communitySize ?? '—'}</td>
             <td className="num">{row.growthScore ?? '—'}</td>
-            <td className="muted">{(row.computedAt || '').replace('T', ' ').slice(0, 19)}</td>
+            <td>
+              <div className="network-table-context">
+                <span className="muted">{formatTimestamp(row.computedAt)}</span>
+                <span className={`network-context-sub network-context-sub--${freshnessLabel(row.computedAt).toLowerCase()}`}>
+                  {freshnessLabel(row.computedAt)}
+                </span>
+              </div>
+            </td>
           </tr>
         ))}
       </tbody>

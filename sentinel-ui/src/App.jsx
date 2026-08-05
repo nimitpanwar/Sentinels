@@ -4,10 +4,15 @@ import NavBar from './components/NavBar';
 import TransactionsPage from './components/transactions/TransactionsPage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
+import AlertHistoryPage from './components/alerts/AlertHistoryPage';
+import NetworkPage from './components/network/NetworkPage';
+import AgentPage from './components/agent/AgentPage';
+import OverviewPage from './components/overview/OverviewPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
 import OverviewPage from './components/overview/OverviewPage';
 import AssistantPage from './components/assistant/AssistantPage';
 import { fetchAlerts } from './api/alertsApi';
+import './App.css';
 
 const STALE_MS = 30_000;
 
@@ -15,6 +20,7 @@ export default function App() {
   const [alerts, setAlerts]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const lastFetchedAt         = useRef(null);
 
   const loadAlerts = useCallback(async ({ background = false } = {}) => {
@@ -56,8 +62,13 @@ export default function App() {
   }
 
   return (
+<<<<<<< HEAD
     <>
       <NavBar />
+=======
+    <div className={`app-shell${drawerOpen ? ' app-shell--drawer-open' : ''}`}>
+      <NavBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+>>>>>>> master
       <div className="app-content">
         <Routes>
           <Route path="/overview"
@@ -71,7 +82,10 @@ export default function App() {
             }
           />
           <Route path="/transactions" element={<TransactionsPage />} />
+<<<<<<< HEAD
           <Route path="/assistant" element={<AssistantPage />} />
+=======
+>>>>>>> master
           <Route path="/alerts"
             element={
               <AlertsPage
@@ -82,6 +96,7 @@ export default function App() {
               />
             }
           />
+<<<<<<< HEAD
           <Route path="/alerts/:id"
             element={<AlertDetailPage updateAlert={updateAlert} />}
           />
@@ -90,5 +105,18 @@ export default function App() {
         </Routes>
       </div>
     </>
+=======
+          <Route path="/alert-history" element={<AlertHistoryPage />} />
+          <Route path="/network" element={<NetworkPage />} />
+          <Route path="/agent" element={<AgentPage />} />
+          <Route path="/alerts/:id"
+            element={<AlertDetailPage updateAlert={updateAlert} refreshAlerts={loadAlerts} />}
+          />
+          <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
+          <Route path="*" element={<Navigate to="/overview" replace />} />
+        </Routes>
+      </div>
+    </div>
+>>>>>>> master
   );
 }

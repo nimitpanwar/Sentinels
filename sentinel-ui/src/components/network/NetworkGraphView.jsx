@@ -17,7 +17,7 @@ const CENTER_X = WIDTH / 2;
 const CENTER_Y = HEIGHT / 2;
 const RADIUS = 105;
 
-export default function NetworkGraphView({ graph, onSelectNode }) {
+export default function NetworkGraphView({ graph, onSelectNode, showLabels = true }) {
   if (!graph || graph.nodes.length === 0) {
     return <div className="loading-state">No neighborhood data for this account.</div>;
   }
@@ -51,7 +51,11 @@ export default function NetworkGraphView({ graph, onSelectNode }) {
             y1={CENTER_Y}
             x2={n.x}
             y2={n.y}
+<<<<<<< HEAD
             stroke="#38393d"
+=======
+            stroke="rgba(0, 255, 136, 0.32)"
+>>>>>>> master
             strokeWidth={weight}
           />
         );
@@ -60,18 +64,36 @@ export default function NetworkGraphView({ graph, onSelectNode }) {
       {/* Neighbor nodes */}
       {positioned.map((n) => (
         <g key={`node-${n.accountId}`} onClick={() => onSelectNode?.(n.accountId)} style={{ cursor: 'pointer' }}>
+<<<<<<< HEAD
           <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#121317" strokeWidth={1.5} />
           <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#ffffff">
             {n.accountNumber || `#${n.accountId}`}
           </text>
+=======
+          <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#0d0e12" strokeWidth={1.5} />
+          {showLabels && (
+            <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#ffffff">
+              {n.accountNumber || `#${n.accountId}`}
+            </text>
+          )}
+>>>>>>> master
         </g>
       ))}
 
       {/* Center node (drawn last, on top) */}
+<<<<<<< HEAD
       <circle cx={CENTER_X} cy={CENTER_Y} r={15} fill="#ff4c4c" stroke="#121317" strokeWidth={2} />
       <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
         {center.accountNumber || `#${center.accountId}`}
       </text>
+=======
+      <circle cx={CENTER_X} cy={CENTER_Y} r={15} fill="#00ff88" stroke="#0d0e12" strokeWidth={2} />
+      {showLabels && (
+        <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
+          {center.accountNumber || `#${center.accountId}`}
+        </text>
+      )}
+>>>>>>> master
     </svg>
   );
 }

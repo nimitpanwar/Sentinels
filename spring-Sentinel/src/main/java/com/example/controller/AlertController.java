@@ -1,7 +1,11 @@
 package com.example.controller;
 
 import com.example.dto.InvestigationAnalystActionRequest;
+import com.example.dto.HighRiskSelfApprovalRequest;
+import com.example.dto.AlertHistoryResponse;
 import com.example.dto.InvestigationMessageResponse;
+import com.example.dto.InvestigationProfileResponse;
+import com.example.dto.InvestigationProfileUpdateRequest;
 import com.example.dto.InvestigationSendRequest;
 import com.example.dto.InvestigationSendResponse;
 import com.example.entity.Alert;
@@ -13,6 +17,7 @@ import com.example.repository.RuleEvaluationRepository;
 import com.example.riskengine.alert.AlertManager;
 import com.example.riskengine.alert.InvalidCaseTransitionException;
 import com.example.service.InvestigationService;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +56,13 @@ public class AlertController {
 
     @GetMapping
     public ResponseEntity<List<Alert>> getAll() {
-        return ResponseEntity.ok(alertRepository.findAll().stream().toList());
+        return ResponseEntity.ok(alertRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")));
+    }
+
+    /** Returns only dismissed alerts for the Alert History page. */
+    @GetMapping("/dismissed")
+    public ResponseEntity<List<Alert>> getDismissed() {
+        return ResponseEntity.ok(investigationService.getDismissedAlerts());
     }
 
     @GetMapping("/{id}")
@@ -59,6 +70,12 @@ public class AlertController {
         return alertRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** Returns full lifecycle history for a dismissed alert. */
+    @GetMapping("/{id}/history")
+    public ResponseEntity<AlertHistoryResponse> getAlertHistory(@PathVariable Integer id) {
+        return ResponseEntity.ok(investigationService.getAlertHistory(id));
     }
 
     /**
@@ -147,8 +164,9 @@ public class AlertController {
 
     /** Valid lifecycle transitions. */
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED = Map.of(
-            CaseStatus.OPEN,         Set.of(CaseStatus.ACKNOWLEDGED),
-            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.DISMISSED)
+            CaseStatus.OPEN,         Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING),
+            CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.DISMISSED),
+            CaseStatus.INVESTIGATING, Set.of(CaseStatus.DISMISSED)
     );
 
     private boolean isTransitionAllowed(CaseStatus from, CaseStatus to) {
@@ -175,6 +193,26 @@ public class AlertController {
         return ResponseEntity.ok(investigationService.getThread(id));
     }
 
+    /** Returns severity-based investigation requirements and completion status for this alert's case. */
+    @GetMapping("/{id}/investigation/profile")
+    public ResponseEntity<InvestigationProfileResponse> getInvestigationProfile(@PathVariable Integer id) {
+        return ResponseEntity.ok(investigationService.getInvestigationProfile(id));
+    }
+
+    /** Updates analyst note/checklist progress used by severity gates. */
+    @PatchMapping("/{id}/investigation/profile")
+    public ResponseEntity<InvestigationProfileResponse> updateInvestigationProfile(@PathVariable Integer id,
+                                                                                   @RequestBody InvestigationProfileUpdateRequest request) {
+        return ResponseEntity.ok(investigationService.updateInvestigationProfile(id, request));
+    }
+
+    /** Completes high-risk self-approval and starts cooldown window for HIGH severity final actions. */
+    @PostMapping("/{id}/investigation/high-risk-self-approval")
+    public ResponseEntity<InvestigationProfileResponse> submitHighRiskSelfApproval(@PathVariable Integer id,
+                                                                                   @RequestBody HighRiskSelfApprovalRequest request) {
+        return ResponseEntity.ok(investigationService.submitHighRiskSelfApproval(id, request));
+    }
+
     /** Applies analyst action after reviewing customer response in investigation workflow. */
     @PatchMapping("/{id}/investigation/action")
     public ResponseEntity<InvestigationSendResponse> applyInvestigationAction(@PathVariable Integer id,
@@ -184,7 +222,8 @@ public class AlertController {
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<Map<String, String>> handleInvestigationRequestErrors(RuntimeException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        HttpStatus status = ex instanceof IllegalStateException ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidCaseTransitionException.class)

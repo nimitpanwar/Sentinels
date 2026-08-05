@@ -16,6 +16,8 @@ public interface AlertRepository extends JpaRepository<Alert, Integer> {
 
     Optional<Alert> findByTransactionTransactionId(Integer transactionId);
 
+    List<Alert> findByStatusOrderByCreatedAtDesc(CaseStatus status);
+
     List<Alert> findByACaseCaseIdOrderByCreatedAtDesc(Integer caseId);
     /** Keeps every Alert linked to a Case in sync when the Case's lifecycle status changes (see AlertManager). */
     @Modifying(clearAutomatically = true)

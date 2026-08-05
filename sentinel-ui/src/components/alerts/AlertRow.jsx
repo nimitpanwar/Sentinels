@@ -39,6 +39,16 @@ function formatAmount(amount) {
   }).format(amount);
 }
 
+function customerDisplayName(account) {
+  if (!account) return '—';
+  const first = account.customer?.firstName?.trim() ?? '';
+  const last = account.customer?.lastName?.trim() ?? '';
+  const full = `${first} ${last}`.trim();
+  if (full) return full;
+  if (account.customerName && account.customerName.trim()) return account.customerName.trim();
+  return '—';
+}
+
 export default function AlertRow({ alert }) {
   const navigate = useNavigate();
   const tx   = alert.transaction ?? {};
@@ -63,7 +73,7 @@ export default function AlertRow({ alert }) {
       <td>{statusBadge(alert.status)}</td>
       <td className="num">{alert.riskScore ?? '—'}</td>
       <td className="mono">{acct.accountNumber ?? '—'}</td>
-      <td>{acct.customerName ?? '—'}</td>
+      <td>{customerDisplayName(acct)}</td>
       <td>{payee.payeeName ?? '—'}</td>
       <td className="num">{formatAmount(tx.amount)}</td>
       <td>{formatDate(alert.createdAt)}</td>

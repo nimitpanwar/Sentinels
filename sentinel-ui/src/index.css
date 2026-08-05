@@ -32,8 +32,114 @@
   box-sizing: border-box;
 }
 
+<<<<<<< HEAD
 html, body, #root {
   min-height: 100%;
+=======
+:root {
+  --font-sans: "Inter", "Segoe UI", "SF Pro Display", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Roboto Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Sentinel Command Center palette — see notes/UIDesign.md */
+  --bg-app: #121317;
+  --bg-elevated: #1a1b1f;
+  --bg-panel: #1a1b1f;
+  --bg-panel-2: #202126;
+  --bg-deep: #0d0e12;
+  --bg-overlay: rgba(13, 14, 18, 0.86);
+
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #ffffff;
+
+  --border-subtle: #38393d;
+  --border-strong: rgba(0, 255, 136, 0.35);
+
+  --accent: #00ff88;
+  --accent-strong: #33ffa1;
+  --accent-soft: rgba(0, 255, 136, 0.14);
+  --teal: #00ff88;
+  --amber: #ffcc00;
+  --red: #ff4c4c;
+  --green: #00ff88;
+
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.35);
+
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-pill: 2px;
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --drawer-width: 292px;
+  --topbar-height: 128px;
+  --statusbar-height: 52px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.page-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.row-count,
+.muted {
+  color: var(--text-secondary);
+}
+
+.mono,
+.num {
+  font-family: var(--font-mono);
+}
+
+.error-banner,
+.loading-state {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-soft);
+>>>>>>> master
 }
 
 body {
@@ -64,8 +170,13 @@ body {
   display: flex;
   gap: 4px;
   padding: 12px 32px 0;
+<<<<<<< HEAD
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-color);
+=======
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+>>>>>>> master
 }
 
 .app-nav-tab {
@@ -73,9 +184,17 @@ body {
   border: none;
   border-bottom: 2px solid transparent;
   padding: 10px 14px;
+<<<<<<< HEAD
   font-size: 0.95em;
   font-weight: 600;
   color: var(--text-dim);
+=======
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+>>>>>>> master
   cursor: pointer;
 }
 
@@ -84,6 +203,11 @@ body {
 }
 
 .app-nav-tab.is-active {
+<<<<<<< HEAD
   color: var(--text-primary);
   border-bottom-color: var(--accent-critical);
+=======
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+>>>>>>> master
 }
