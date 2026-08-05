@@ -4,6 +4,8 @@ import NavBar from './components/NavBar';
 import TransactionsPage from './components/transactions/TransactionsPage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
+import AlertHistoryPage from './components/alerts/AlertHistoryPage';
+import NetworkPage from './components/network/NetworkPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
 import { fetchAlerts } from './api/alertsApi';
 
@@ -68,8 +70,10 @@ export default function App() {
             />
           }
         />
+        <Route path="/alert-history" element={<AlertHistoryPage />} />
+        <Route path="/network" element={<NetworkPage />} />
         <Route path="/alerts/:id"
-          element={<AlertDetailPage updateAlert={updateAlert} />}
+          element={<AlertDetailPage updateAlert={updateAlert} refreshAlerts={loadAlerts} />}
         />
         <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
         <Route path="*" element={<Navigate to="/transactions" replace />} />

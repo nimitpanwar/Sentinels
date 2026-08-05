@@ -4,6 +4,7 @@ import {
   fetchAlert, updateAlertStatus,
   fetchAlertEvaluations, fetchCaseAlerts, fetchRecentAccountTransactions,
   fetchInvestigationThread, sendInvestigationMessage, startInvestigation, applyInvestigationAction,
+  fetchInvestigationProfile, updateInvestigationProfile, submitHighRiskSelfApproval,
 } from '../../api/alertsApi';
 import './alerts.css';
 import '../transactions/transactions.css';
@@ -42,8 +43,34 @@ function fmtAmount(amount) {
   }).format(amount);
 }
 
+function customerDisplayName(account) {
+  if (!account) return '—';
+  const first = account.customer?.firstName?.trim() ?? '';
+  const last = account.customer?.lastName?.trim() ?? '';
+  const full = `${first} ${last}`.trim();
+  if (full) return full;
+  if (account.customerName && account.customerName.trim()) return account.customerName.trim();
+  return '—';
+}
+
+function normalizeUiErrorMessage(message, fallback = 'Action failed. Please try again.') {
+  if (!message) return fallback;
+  const text = String(message).trim();
+  if (!text) return fallback;
+
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error.trim();
+    if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message.trim();
+  } catch {
+    // Keep original message when it is not JSON.
+  }
+
+  return text;
+}
+
 /* ── Component ───────────────────────────────────────────────── */
-export default function AlertDetailPage({ updateAlert }) {
+export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [alert, setAlert]             = useState(null);
@@ -61,6 +88,14 @@ export default function AlertDetailPage({ updateAlert }) {
   const [activeTab, setActiveTab]     = useState('overview');
   const [thread, setThread]           = useState([]);
   const [threadLoading, setThreadLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [analystNote, setAnalystNote] = useState('');
+  const [checklistComplete, setChecklistComplete] = useState(false);
+  const [highRiskJustification, setHighRiskJustification] = useState('');
+  const [highConfirmOne, setHighConfirmOne] = useState(false);
+  const [highConfirmTwo, setHighConfirmTwo] = useState(false);
+  const [highSkipCooldown, setHighSkipCooldown] = useState(false);
   const [composeSubject, setComposeSubject] = useState('Sentinel Alert Verification Required - Please Confirm Recent Activity');
   const [composeBody, setComposeBody] = useState('Hello,\n\nWe detected unusual activity on your account. Please review and respond using the secure link provided below:\n\n{{response_link}}\n\nIf this transaction was not authorized by you, please mention that in your response.\n\nRegards,\nSentinel Investigations Team');
 
@@ -74,6 +109,14 @@ export default function AlertDetailPage({ updateAlert }) {
   const [selectedSibling, setSelectedSibling] = useState(null);
 
   useEffect(() => {
+    setProfile(null);
+    setAnalystNote('');
+    setChecklistComplete(false);
+    setHighRiskJustification('');
+    setHighConfirmOne(false);
+    setHighConfirmTwo(false);
+    setHighSkipCooldown(false);
+
     fetchAlert(id)
       .then(data => {
         if (data.status === 'OPEN') {
@@ -85,7 +128,9 @@ export default function AlertDetailPage({ updateAlert }) {
       })
       .then(alertData => {
         setAlert(alertData);
-        const txId   = alertData.transaction?.transactionId;
+        setAnalystNote(alertData.case?.investigationAnalystNote ?? '');
+        setChecklistComplete(Boolean(alertData.case?.investigationChecklistComplete));
+        setHighRiskJustification(alertData.case?.highRiskJustification ?? '');
         const acctId = alertData.transaction?.account?.accountId;
         const caseId = alertData.case?.caseId;
 
@@ -98,15 +143,16 @@ export default function AlertDetailPage({ updateAlert }) {
           ? fetchCaseAlerts(caseId).then(setCaseAlerts).catch(() => {})
           : Promise.resolve();
         const p4 = fetchInvestigationThread(id).then(setThread).catch(() => {});
-        return Promise.all([p1, p2, p3, p4]);
+        const p5 = fetchInvestigationProfile(id).then(setProfile).catch(() => {});
+        return Promise.all([p1, p2, p3, p4, p5]);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, updateAlert]);
 
   useEffect(() => {
     previousResponseCountRef.current = thread.filter(item => item.responseStatus === 'RESPONDED').length;
-  }, [id]);
+  }, [thread]);
 
   useEffect(() => {
     if (activeTab !== 'investigation') {
@@ -130,6 +176,30 @@ export default function AlertDetailPage({ updateAlert }) {
     refreshThread();
     const intervalId = setInterval(refreshThread, 10000);
     return () => clearInterval(intervalId);
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    if (activeTab !== 'investigation') {
+      return;
+    }
+    let mounted = true;
+    const loadProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const next = await fetchInvestigationProfile(id);
+        if (mounted) {
+          setProfile(next);
+        }
+      } catch {
+        // Keep page usable if profile fetch fails temporarily.
+      } finally {
+        if (mounted) {
+          setProfileLoading(false);
+        }
+      }
+    };
+    loadProfile();
+    return () => { mounted = false; };
   }, [activeTab, id]);
 
   useEffect(() => {
@@ -161,7 +231,7 @@ export default function AlertDetailPage({ updateAlert }) {
         setActionSuccess('Alert updated successfully.');
       }
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -185,7 +255,7 @@ export default function AlertDetailPage({ updateAlert }) {
       setThread(latestThread);
       setActiveTab('investigation');
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setThreadLoading(false);
       setWorking(false);
@@ -197,13 +267,21 @@ export default function AlertDetailPage({ updateAlert }) {
     setActionError(null);
     setActionSuccess(null);
     try {
-      const result = await applyInvestigationAction(id, action, dismissNotes, composeSubject, composeBody);
+      if (profile?.blockedReasons?.length && action === 'DISMISS') {
+        throw new Error(profile.blockedReasons[0]);
+      }
+      const result = await applyInvestigationAction(id, action, dismissNotes, composeSubject, composeBody, updateScope);
       if (result.alert) {
         setAlert(result.alert);
         if (updateAlert) updateAlert(result.alert);
       }
+      if (refreshAlerts) {
+        await refreshAlerts({ background: true });
+      }
       const latestThread = await fetchInvestigationThread(id);
       setThread(latestThread);
+      const latestProfile = await fetchInvestigationProfile(id);
+      setProfile(latestProfile);
       if (action === 'DISMISS') {
         setActionSuccess('Alert dismissed from investigation workflow.');
       } else if (action === 'FLAG') {
@@ -212,7 +290,43 @@ export default function AlertDetailPage({ updateAlert }) {
         setActionSuccess('Follow-up outreach sent with a new response link.');
       }
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleSaveProfile() {
+    setWorking(true);
+    setActionError(null);
+    try {
+      const updatedProfile = await updateInvestigationProfile(id, {
+        analystNote,
+        checklistComplete,
+      });
+      setProfile(updatedProfile);
+      setActionSuccess('Investigation checklist progress saved.');
+    } catch (err) {
+      setActionError(normalizeUiErrorMessage(err?.message));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleHighRiskSelfApproval() {
+    setWorking(true);
+    setActionError(null);
+    try {
+      const updatedProfile = await submitHighRiskSelfApproval(id, {
+        justification: highRiskJustification,
+        confirmOne: highConfirmOne,
+        confirmTwo: highConfirmTwo,
+        skipCooldown: highSkipCooldown,
+      });
+      setProfile(updatedProfile);
+      setActionSuccess('High-risk self-approval recorded. Cooldown started.');
+    } catch (err) {
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -274,6 +388,7 @@ export default function AlertDetailPage({ updateAlert }) {
   }
 
   const isTerminal = alert && (alert.status === 'DISMISSED' || alert.status === 'CLOSED');
+  const isImmutable = alert && (alert.status === 'DISMISSED' || alert.status === 'CLOSED' || alert.status === 'ESCALATED');
   // Keep tabs visible once analyst has entered investigation mode, even if
   // backend status is still propagating and temporarily reports ACKNOWLEDGED.
   const showInvestigationTabs =
@@ -284,6 +399,9 @@ export default function AlertDetailPage({ updateAlert }) {
   const acct = tx.account ?? {};
   const payee = tx.payee ?? {};
   const responseCount = thread.filter(item => item.responseStatus === 'RESPONDED').length;
+  const blockedReasons = profile?.blockedReasons ?? [];
+  const finalActionBlocked = blockedReasons.length > 0;
+  const isHighSeverity = (profile?.severity ?? alert?.case?.severity) === 'HIGH';
 
   return (
     <div className="page-alert-detail">
@@ -323,11 +441,13 @@ export default function AlertDetailPage({ updateAlert }) {
 
           {showInvestigationTabs && activeTab === 'investigation' && (
             <div className="alert-detail-tab-content">
+            {actionError && <div className="alert-inline-bar alert-inline-bar--error">{actionError}</div>}
             <div className="investigation-panel">
-              {actionError && <p className="alert-action-error">{actionError}</p>}
-              {isTerminal && (
+              {isImmutable && (
                 <div className="investigation-terminal-note">
-                  This alert is in a terminal state. Outreach is locked, but historical thread entries are available below.
+                  {alert?.status === 'ESCALATED'
+                    ? 'This alert has been escalated and is now immutable in this workflow. Further analyst actions are locked.'
+                    : 'This alert is in a terminal state. Outreach is locked, but historical thread entries are available below.'}
                 </div>
               )}
               <div className="investigation-compose">
@@ -357,9 +477,134 @@ export default function AlertDetailPage({ updateAlert }) {
                   </button>
                 </div>
               </div>
+              <div className="investigation-profile-card investigation-profile-card--tile">
+                <h2 className="alert-detail-card-title">Investigation Checklist</h2>
+                {profileLoading && <div className="alerts-loading">Loading severity profile…</div>}
+                {profile && (
+                  <>
+                    <div className="investigation-profile-head">
+                      <span className="badge badge--acknowledged">Severity Profile: {profile.severity || 'LOW'}</span>
+                      <span className="investigation-profile-progress">
+                        {profile.completedSteps?.length || 0}/{profile.requiredSteps?.length || 0} required steps done
+                      </span>
+                    </div>
+                    {profile.requiredSteps?.length > 0 && (
+                      <ul className="investigation-required-list">
+                        {profile.requiredSteps.map(step => {
+                          const done = (profile.completedSteps || []).includes(step);
+                          return (
+                            <li key={step} className={`investigation-required-item ${done ? 'is-done' : 'is-missing'}`}>
+                              <span>{done ? 'Done' : 'Pending'}</span>
+                              <span>{step.replaceAll('_', ' ')}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
 
-              <div className="investigation-thread">
-                <h2 className="alert-detail-card-title">Investigation Thread</h2>
+                    <label className="dismiss-modal__label" htmlFor="investigation-analyst-note">Analyst Note</label>
+                    <textarea
+                      id="investigation-analyst-note"
+                      className="dismiss-modal__textarea"
+                      rows={3}
+                      value={analystNote}
+                      onChange={e => setAnalystNote(e.target.value)}
+                      placeholder="Add your investigation note"
+                    />
+
+                    <label className="investigation-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={checklistComplete}
+                        onChange={e => setChecklistComplete(e.target.checked)}
+                      />
+                      <span>Checklist complete</span>
+                    </label>
+
+                    <div className="dismiss-modal__buttons">
+                      <button className="btn btn--ghost" onClick={handleSaveProfile} disabled={working}>
+                        Save Progress
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="investigation-profile-card investigation-profile-card--tile">
+                <h2 className="alert-detail-card-title">
+                  {isHighSeverity ? 'High-Risk Self-Approval' : 'Final Action Gates'}
+                </h2>
+
+                {isHighSeverity ? (
+                  <div className="high-risk-panel">
+                    <p className="high-risk-copy">
+                      HIGH severity final actions need self-approval with a short cooldown.
+                    </p>
+                    <label className="dismiss-modal__label" htmlFor="high-risk-justification">Final Justification</label>
+                    <textarea
+                      id="high-risk-justification"
+                      className="dismiss-modal__textarea"
+                      rows={4}
+                      value={highRiskJustification}
+                      onChange={e => setHighRiskJustification(e.target.value)}
+                      placeholder="Explain why final action is safe"
+                    />
+                    <label className="investigation-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={highConfirmOne}
+                        onChange={e => setHighConfirmOne(e.target.checked)}
+                      />
+                      <span>I understand this is a high-risk final action.</span>
+                    </label>
+                    <label className="investigation-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={highConfirmTwo}
+                        onChange={e => setHighConfirmTwo(e.target.checked)}
+                      />
+                      <span>I confirm I reviewed all available evidence.</span>
+                    </label>
+                    {Boolean(profile?.allowSkipCooldown) && (
+                      <label className="investigation-checkbox-row">
+                        <input
+                          type="checkbox"
+                          checked={highSkipCooldown}
+                          onChange={e => setHighSkipCooldown(e.target.checked)}
+                        />
+                        <span>Skip cooldown (demo mode)</span>
+                      </label>
+                    )}
+                    {(profile?.cooldownRemainingSeconds || 0) > 0 && (
+                      <p className="high-risk-cooldown">
+                        Cooldown remaining: {Math.ceil(profile.cooldownRemainingSeconds / 60)} minute(s)
+                      </p>
+                    )}
+                    <div className="dismiss-modal__buttons">
+                      <button className="btn btn--secondary" onClick={handleHighRiskSelfApproval} disabled={working}>
+                        Record High-Risk Self-Approval
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="investigation-hint">
+                    Complete required checklist steps for this severity before terminal actions.
+                  </p>
+                )}
+
+                {blockedReasons.length > 0 && (
+                  <div className="investigation-blocked-box">
+                    <div className="investigation-blocked-title">Final actions are blocked</div>
+                    <ul>
+                      {blockedReasons.map(reason => <li key={reason}>{reason}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="investigation-thread">
+              <h2 className="alert-detail-card-title">Investigation Thread</h2>
                 <div className="investigation-thread-summary">
                   <span className="badge badge--acknowledged">Responses received: {responseCount}</span>
                   <button
@@ -423,9 +668,9 @@ export default function AlertDetailPage({ updateAlert }) {
                   </ul>
                 )}
 
-                {!isTerminal && (
+                {!isImmutable && (
                   <div className="investigation-analyst-actions">
-                    <button className="btn btn--danger" onClick={() => handleAnalystAction('DISMISS')} disabled={working}>
+                    <button className="btn btn--danger" onClick={() => handleAnalystAction('DISMISS')} disabled={working || finalActionBlocked}>
                       Dismiss
                     </button>
                     <button className="btn btn--secondary" onClick={() => handleAnalystAction('FLAG')} disabled={working}>
@@ -436,7 +681,6 @@ export default function AlertDetailPage({ updateAlert }) {
                     </button>
                   </div>
                 )}
-              </div>
             </div>
             </div>
           )}
@@ -470,7 +714,7 @@ export default function AlertDetailPage({ updateAlert }) {
                 <dt>Type</dt>        <dd>{tx.type ?? '—'}</dd>
                 <dt>Timestamp</dt>   <dd>{fmtDate(tx.transactionTimestamp)}</dd>
                 <dt>Account No.</dt> <dd className="mono">{acct.accountNumber ?? '—'}</dd>
-                <dt>Customer</dt>    <dd>{acct.customerName ?? '—'}</dd>
+                <dt>Customer</dt>    <dd>{customerDisplayName(acct)}</dd>
                 <dt>Payee</dt>       <dd>{payee.payeeName ?? '—'}</dd>
                 <dt>Description</dt> <dd>{tx.description ?? '—'}</dd>
                 <dt>Location</dt>    <dd>{tx.location ?? '—'}</dd>
@@ -709,7 +953,7 @@ export default function AlertDetailPage({ updateAlert }) {
                 <dt>Amount</dt>      <dd className="num">{fmtAmount(stx.amount)}</dd>
                 <dt>Payee</dt>       <dd>{spayee.payeeName ?? '—'}</dd>
                 <dt>Account</dt>     <dd className="mono">{sacct.accountNumber ?? '—'}</dd>
-                <dt>Customer</dt>    <dd>{sacct.customerName ?? '—'}</dd>
+                <dt>Customer</dt>    <dd>{customerDisplayName(sacct)}</dd>
                 <dt>Created</dt>     <dd>{fmtDate(s.createdAt)}</dd>
                 <dt>Acknowledged</dt><dd>{fmtDate(s.acknowledgedAt)}</dd>
               </dl>

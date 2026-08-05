@@ -38,6 +38,9 @@ export default function NetworkPage() {
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [graph, setGraph] = useState(null);
+  const [graphLoading, setGraphLoading] = useState(false);
+  const [graphError, setGraphError] = useState(null);
+  const [accountTrail, setAccountTrail] = useState([]);
 
   const loadScores = useCallback(() => {
     setLoading(true);
@@ -56,16 +59,41 @@ export default function NetworkPage() {
 
   useEffect(() => { loadScores(); }, [loadScores]);
 
-  const selectAccount = useCallback((accountId) => {
+  const selectAccount = useCallback(async (accountId, source = 'table') => {
     setSelectedAccountId(accountId);
     setDetail(null);
     setGraph(null);
-    Promise.all([fetchAccountNetworkDetail(accountId), fetchAccountGraph(accountId)])
-      .then(([d, g]) => {
-        setDetail(d);
-        setGraph(g);
-      })
-      .catch((err) => setError(err.message));
+    setGraphError(null);
+    setGraphLoading(true);
+
+    if (source === 'graph') {
+      setAccountTrail((prev) => {
+        const seenIdx = prev.indexOf(accountId);
+        if (seenIdx >= 0) return prev.slice(0, seenIdx + 1);
+        return [...prev.slice(-4), accountId];
+      });
+    } else {
+      setAccountTrail([accountId]);
+    }
+
+    const [detailResult, graphResult] = await Promise.allSettled([
+      fetchAccountNetworkDetail(accountId),
+      fetchAccountGraph(accountId),
+    ]);
+
+    if (detailResult.status === 'fulfilled') {
+      setDetail(detailResult.value);
+    } else {
+      setError(detailResult.reason?.message || 'Failed to load account detail.');
+    }
+
+    if (graphResult.status === 'fulfilled') {
+      setGraph(graphResult.value);
+    } else {
+      setGraphError(graphResult.reason?.message || 'Failed to load graph neighborhood.');
+    }
+
+    setGraphLoading(false);
   }, []);
 
   const runNow = useCallback(() => {
@@ -131,7 +159,15 @@ export default function NetworkPage() {
         : <NetworkScoreTable rows={scores} selectedAccountId={selectedAccountId} onSelect={selectAccount} />}
 
       {selectedAccountId && (
-        <NetworkAccountDetail detail={detail} graph={graph} onSelectNode={selectAccount} />
+        <NetworkAccountDetail
+          detail={detail}
+          graph={graph}
+          graphLoading={graphLoading}
+          graphError={graphError}
+          accountTrail={accountTrail}
+          onSelectNode={(accountId) => selectAccount(accountId, 'graph')}
+          onSelectTrailAccount={(accountId) => selectAccount(accountId, 'graph')}
+        />
       )}
     </div>
   );

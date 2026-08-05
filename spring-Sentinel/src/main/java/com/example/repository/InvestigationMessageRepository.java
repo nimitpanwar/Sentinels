@@ -1,6 +1,7 @@
 package com.example.repository;
 
 import com.example.entity.InvestigationMessage;
+import com.example.enums.InvestigationMessageStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,4 +14,8 @@ public interface InvestigationMessageRepository extends JpaRepository<Investigat
     Optional<InvestigationMessage> findByResponseToken(String responseToken);
 
     Optional<InvestigationMessage> findTopByAlertAlertIdOrderByCreatedAtDesc(Integer alertId);
+
+    boolean existsByACaseCaseId(Integer caseId);
+
+    boolean existsByACaseCaseIdAndDeliveryStatus(Integer caseId, InvestigationMessageStatus deliveryStatus);
 }
