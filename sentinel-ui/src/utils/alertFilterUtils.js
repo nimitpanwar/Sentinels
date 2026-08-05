@@ -4,8 +4,7 @@
  *
  * Filter fields:
  *   severity      — exact match on alert.severity     (HIGH | MID | LOW)
- *   minRiskScore  — alert.riskScore >= value
- *   maxRiskScore  — alert.riskScore <= value
+ *   alertId       — exact match on alert.alertId
  *   fromDate      — alert.createdAt >= date
  *   toDate        — alert.createdAt <= date
  *   accountSearch — partial match on accountNumber or customerName
@@ -14,8 +13,7 @@
 
 export const EMPTY_ALERT_FILTERS = {
   severity:      '',
-  minRiskScore:  '',
-  maxRiskScore:  '',
+  alertId:       '',
   fromDate:      '',
   toDate:        '',
   accountSearch: '',
@@ -29,16 +27,14 @@ export function countActiveAlertFilters(filters) {
 export function filterAlerts(alerts, filters) {
   const {
     severity,
-    minRiskScore,
-    maxRiskScore,
+    alertId,
     fromDate,
     toDate,
     accountSearch,
     payeeSearch,
   } = filters;
 
-  const minScore = minRiskScore !== '' && minRiskScore != null ? parseFloat(minRiskScore) : null;
-  const maxScore = maxRiskScore !== '' && maxRiskScore != null ? parseFloat(maxRiskScore) : null;
+  const idFilter = alertId !== '' && alertId != null ? String(alertId).trim() : '';
   const fromMs   = fromDate ? new Date(fromDate).getTime() : null;
   const toMs     = toDate   ? new Date(toDate).getTime()   : null;
   const acctQ    = accountSearch?.trim().toLowerCase() || null;
@@ -52,10 +48,8 @@ export function filterAlerts(alerts, filters) {
     // Severity
     if (severity && alert.severity !== severity) return false;
 
-    // Risk score range
-    const score = alert.riskScore != null ? parseFloat(alert.riskScore) : null;
-    if (minScore != null && (score == null || score < minScore)) return false;
-    if (maxScore != null && (score == null || score > maxScore)) return false;
+    // Alert ID (exact match)
+    if (idFilter && String(alert.alertId ?? '') !== idFilter) return false;
 
     // Date range on createdAt
     if (fromMs != null || toMs != null) {

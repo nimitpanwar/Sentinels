@@ -188,7 +188,8 @@ public class AlertManager {
             // OPEN -> INVESTIGATING is allowed for one-click analyst takeover
             // from the alert detail page's Investigate action.
             // OPEN -> DISMISSED is also allowed for immediate false-positive handling.
-            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING, CaseStatus.DISMISSED),
+            // OPEN -> ESCALATED is allowed for immediate escalation from investigation actions.
+            CaseStatus.OPEN, Set.of(CaseStatus.ACKNOWLEDGED, CaseStatus.INVESTIGATING, CaseStatus.DISMISSED, CaseStatus.ESCALATED),
             CaseStatus.ACKNOWLEDGED, Set.of(CaseStatus.INVESTIGATING, CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
             CaseStatus.INVESTIGATING, Set.of(CaseStatus.ESCALATED, CaseStatus.CLOSED, CaseStatus.DISMISSED),
             CaseStatus.ESCALATED, Set.of(CaseStatus.CLOSED, CaseStatus.DISMISSED)
@@ -197,30 +198,42 @@ public class AlertManager {
 
     @Transactional
     public Optional<Case> acknowledge(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null);
+        return updateCaseStatus(caseId, CaseStatus.ACKNOWLEDGED, null, null, null);
     }
 
     /** "Mark as Investigating" - moves an already-acknowledged case into active investigation. */
     @Transactional
     public Optional<Case> investigate(Integer caseId) {
-        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null);
+        return updateCaseStatus(caseId, CaseStatus.INVESTIGATING, null, null, null);
     }
 
     @Transactional
     public Optional<Case> close(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.CLOSED, resolutionNotes, reasonCode, null);
     }
 
     /** Marks the case a false positive / not requiring action - a terminal state distinct from CLOSED. */
     @Transactional
     public Optional<Case> dismiss(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode, null);
+    }
+
+    /**
+     * Dismiss variant for alert-scoped workflows where gating must follow
+     * the selected alert severity instead of merged case severity.
+     */
+    @Transactional
+    public Optional<Case> dismissWithSeverity(Integer caseId,
+                                              String resolutionNotes,
+                                              ResolutionReasonCode reasonCode,
+                                              Severity gatingSeverity) {
+        return updateCaseStatus(caseId, CaseStatus.DISMISSED, resolutionNotes, reasonCode, gatingSeverity);
     }
 
     /** Escalates the case for deeper/manual review while keeping it active. */
     @Transactional
     public Optional<Case> escalate(Integer caseId, String resolutionNotes, ResolutionReasonCode reasonCode) {
-        return updateCaseStatus(caseId, CaseStatus.ESCALATED, resolutionNotes, reasonCode);
+        return updateCaseStatus(caseId, CaseStatus.ESCALATED, resolutionNotes, reasonCode, null);
     }
 
     @Transactional
@@ -233,7 +246,11 @@ public class AlertManager {
         return caseRepository.findById(caseId);
     }
 
-    private Optional<Case> updateCaseStatus(Integer caseId, CaseStatus newStatus, String resolutionNotes, ResolutionReasonCode reasonCode) {
+    private Optional<Case> updateCaseStatus(Integer caseId,
+                                            CaseStatus newStatus,
+                                            String resolutionNotes,
+                                            ResolutionReasonCode reasonCode,
+                                            Severity gatingSeverityOverride) {
         return caseRepository.findById(caseId).map(c -> {
             CaseStatus currentStatus = c.getStatus();
             if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, Set.of()).contains(newStatus)) {
@@ -241,7 +258,7 @@ public class AlertManager {
             }
 
             if (newStatus == CaseStatus.CLOSED || newStatus == CaseStatus.DISMISSED) {
-                enforceSeverityGates(c, newStatus);
+                enforceSeverityGates(c, newStatus, gatingSeverityOverride);
             }
 
             c.setStatus(newStatus);
@@ -268,8 +285,10 @@ public class AlertManager {
         });
     }
 
-    private void enforceSeverityGates(Case aCase, CaseStatus targetStatus) {
-        Severity severity = aCase.getSeverity() == null ? Severity.LOW : aCase.getSeverity();
+    private void enforceSeverityGates(Case aCase, CaseStatus targetStatus, Severity gatingSeverityOverride) {
+        Severity severity = gatingSeverityOverride != null
+                ? gatingSeverityOverride
+                : (aCase.getSeverity() == null ? Severity.LOW : aCase.getSeverity());
 
         if (isBlank(aCase.getInvestigationAnalystNote())) {
             throw new IllegalStateException("Add analyst note before setting case to " + targetStatus);

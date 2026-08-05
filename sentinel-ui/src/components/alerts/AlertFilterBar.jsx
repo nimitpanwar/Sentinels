@@ -96,25 +96,13 @@ export default function AlertFilterBar({ filters, onFiltersChange }) {
                   </select>
                 </label>
                 <label className="filter-label">
-                  Min Risk Score
+                  Alert ID
                   <input
-                    type="number"
+                    type="text"
                     className="filter-input"
-                    placeholder="0"
-                    min="0" max="100"
-                    value={draft.minRiskScore}
-                    onChange={set('minRiskScore')}
-                  />
-                </label>
-                <label className="filter-label">
-                  Max Risk Score
-                  <input
-                    type="number"
-                    className="filter-input"
-                    placeholder="100"
-                    min="0" max="100"
-                    value={draft.maxRiskScore}
-                    onChange={set('maxRiskScore')}
+                    placeholder="e.g. 1042"
+                    value={draft.alertId}
+                    onChange={set('alertId')}
                   />
                 </label>
               </div>

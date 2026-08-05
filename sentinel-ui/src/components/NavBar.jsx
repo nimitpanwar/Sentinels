@@ -18,6 +18,18 @@ export default function NavBar() {
         >
           Alerts
         </NavLink>
+        <NavLink
+          to="/alert-history"
+          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
+        >
+          Alert History
+        </NavLink>
+        <NavLink
+          to="/network"
+          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
+        >
+          Network Insights
+        </NavLink>
       </div>
     </nav>
   );

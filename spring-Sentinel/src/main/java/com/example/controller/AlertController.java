@@ -2,6 +2,7 @@ package com.example.controller;
 
 import com.example.dto.InvestigationAnalystActionRequest;
 import com.example.dto.HighRiskSelfApprovalRequest;
+import com.example.dto.AlertHistoryResponse;
 import com.example.dto.InvestigationMessageResponse;
 import com.example.dto.InvestigationProfileResponse;
 import com.example.dto.InvestigationProfileUpdateRequest;
@@ -58,11 +59,23 @@ public class AlertController {
         return ResponseEntity.ok(alertRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")));
     }
 
+    /** Returns only dismissed alerts for the Alert History page. */
+    @GetMapping("/dismissed")
+    public ResponseEntity<List<Alert>> getDismissed() {
+        return ResponseEntity.ok(investigationService.getDismissedAlerts());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Alert> getById(@PathVariable Integer id) {
         return alertRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** Returns full lifecycle history for a dismissed alert. */
+    @GetMapping("/{id}/history")
+    public ResponseEntity<AlertHistoryResponse> getAlertHistory(@PathVariable Integer id) {
+        return ResponseEntity.ok(investigationService.getAlertHistory(id));
     }
 
     /**

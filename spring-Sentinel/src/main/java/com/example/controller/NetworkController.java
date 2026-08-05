@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/network")
@@ -81,6 +83,17 @@ public class NetworkController {
 
     @Value("${network.python.timeout-seconds:120}")
     private int pythonTimeoutSeconds;
+
+    // Reuse Spring's active datasource credentials for the Python job so
+    // local .env setup is optional and both runtimes stay in sync.
+    @Value("${spring.datasource.url}")
+    private String datasourceUrl;
+
+    @Value("${spring.datasource.username}")
+    private String datasourceUsername;
+
+    @Value("${spring.datasource.password:}")
+    private String datasourcePassword;
 
     public NetworkController(NetworkRunRepository networkRunRepository,
                               AccountNetworkScoreRepository scoreRepository,
@@ -204,6 +217,8 @@ public class NetworkController {
         pb.directory(new File(pythonScriptDir));
         pb.redirectErrorStream(true);
 
+        applyDatabaseEnvironment(pb);
+
         String output;
         int exitCode;
         try {
@@ -269,5 +284,27 @@ public class NetworkController {
                 s.getRunId(), s.getAccountId(), accountNumber, s.getNetworkRiskScore(),
                 s.getPageRankPercentile(), s.getSharedPayeeCount(), s.getCommunityId(), s.getCommunitySize(),
                 s.getGrowthScore(), s.getFraudExposureScore(), s.getEvidenceJson(), s.getNetworkReason(), s.getComputedAt());
+    }
+
+    private void applyDatabaseEnvironment(ProcessBuilder pb) {
+        if (datasourceUrl == null || datasourceUrl.isBlank()) {
+            return;
+        }
+
+        Matcher matcher = Pattern.compile("^jdbc:mysql://([^:/?]+)(?::(\\d+))?/([^?]+).*$").matcher(datasourceUrl.trim());
+        if (!matcher.matches()) {
+            return;
+        }
+
+        String dbHost = matcher.group(1);
+        String dbPort = matcher.group(2) != null ? matcher.group(2) : "3306";
+        String dbName = matcher.group(3);
+
+        Map<String, String> env = pb.environment();
+        env.put("NETWORK_DB_HOST", dbHost);
+        env.put("NETWORK_DB_PORT", dbPort);
+        env.put("NETWORK_DB_NAME", dbName);
+        env.put("NETWORK_DB_USER", datasourceUsername);
+        env.put("NETWORK_DB_PASSWORD", datasourcePassword != null ? datasourcePassword : "");
     }
 }

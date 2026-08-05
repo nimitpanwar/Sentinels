@@ -53,8 +53,24 @@ function customerDisplayName(account) {
   return '—';
 }
 
+function normalizeUiErrorMessage(message, fallback = 'Action failed. Please try again.') {
+  if (!message) return fallback;
+  const text = String(message).trim();
+  if (!text) return fallback;
+
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error.trim();
+    if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message.trim();
+  } catch {
+    // Keep original message when it is not JSON.
+  }
+
+  return text;
+}
+
 /* ── Component ───────────────────────────────────────────────── */
-export default function AlertDetailPage({ updateAlert }) {
+export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [alert, setAlert]             = useState(null);
@@ -216,7 +232,7 @@ export default function AlertDetailPage({ updateAlert }) {
         setActionSuccess('Alert updated successfully.');
       }
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -240,7 +256,7 @@ export default function AlertDetailPage({ updateAlert }) {
       setThread(latestThread);
       setActiveTab('investigation');
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setThreadLoading(false);
       setWorking(false);
@@ -255,10 +271,13 @@ export default function AlertDetailPage({ updateAlert }) {
       if (profile?.blockedReasons?.length && action === 'DISMISS') {
         throw new Error(profile.blockedReasons[0]);
       }
-      const result = await applyInvestigationAction(id, action, dismissNotes, composeSubject, composeBody);
+      const result = await applyInvestigationAction(id, action, dismissNotes, composeSubject, composeBody, updateScope);
       if (result.alert) {
         setAlert(result.alert);
         if (updateAlert) updateAlert(result.alert);
+      }
+      if (refreshAlerts) {
+        await refreshAlerts({ background: true });
       }
       const latestThread = await fetchInvestigationThread(id);
       setThread(latestThread);
@@ -272,7 +291,7 @@ export default function AlertDetailPage({ updateAlert }) {
         setActionSuccess('Follow-up outreach sent with a new response link.');
       }
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -289,7 +308,7 @@ export default function AlertDetailPage({ updateAlert }) {
       setProfile(updatedProfile);
       setActionSuccess('Investigation checklist progress saved.');
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -308,7 +327,7 @@ export default function AlertDetailPage({ updateAlert }) {
       setProfile(updatedProfile);
       setActionSuccess('High-risk self-approval recorded. Cooldown started.');
     } catch (err) {
-      setActionError(err.message);
+      setActionError(normalizeUiErrorMessage(err?.message));
     } finally {
       setWorking(false);
     }
@@ -370,6 +389,7 @@ export default function AlertDetailPage({ updateAlert }) {
   }
 
   const isTerminal = alert && (alert.status === 'DISMISSED' || alert.status === 'CLOSED');
+  const isImmutable = alert && (alert.status === 'DISMISSED' || alert.status === 'CLOSED' || alert.status === 'ESCALATED');
   // Keep tabs visible once analyst has entered investigation mode, even if
   // backend status is still propagating and temporarily reports ACKNOWLEDGED.
   const showInvestigationTabs =
@@ -422,11 +442,13 @@ export default function AlertDetailPage({ updateAlert }) {
 
           {showInvestigationTabs && activeTab === 'investigation' && (
             <div className="alert-detail-tab-content">
+            {actionError && <div className="alert-inline-bar alert-inline-bar--error">{actionError}</div>}
             <div className="investigation-panel">
-              {actionError && <p className="alert-action-error">{actionError}</p>}
-              {isTerminal && (
+              {isImmutable && (
                 <div className="investigation-terminal-note">
-                  This alert is in a terminal state. Outreach is locked, but historical thread entries are available below.
+                  {alert?.status === 'ESCALATED'
+                    ? 'This alert has been escalated and is now immutable in this workflow. Further analyst actions are locked.'
+                    : 'This alert is in a terminal state. Outreach is locked, but historical thread entries are available below.'}
                 </div>
               )}
               <div className="investigation-compose">
@@ -647,7 +669,7 @@ export default function AlertDetailPage({ updateAlert }) {
                   </ul>
                 )}
 
-                {!isTerminal && (
+                {!isImmutable && (
                   <div className="investigation-analyst-actions">
                     <button className="btn btn--danger" onClick={() => handleAnalystAction('DISMISS')} disabled={working || finalActionBlocked}>
                       Dismiss

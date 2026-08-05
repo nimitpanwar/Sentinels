@@ -17,7 +17,7 @@ const CENTER_X = WIDTH / 2;
 const CENTER_Y = HEIGHT / 2;
 const RADIUS = 105;
 
-export default function NetworkGraphView({ graph, onSelectNode }) {
+export default function NetworkGraphView({ graph, onSelectNode, showLabels = true }) {
   if (!graph || graph.nodes.length === 0) {
     return <div className="loading-state">No neighborhood data for this account.</div>;
   }
@@ -61,17 +61,21 @@ export default function NetworkGraphView({ graph, onSelectNode }) {
       {positioned.map((n) => (
         <g key={`node-${n.accountId}`} onClick={() => onSelectNode?.(n.accountId)} style={{ cursor: 'pointer' }}>
           <circle cx={n.x} cy={n.y} r={9} fill={riskColor(n.networkRiskScore)} stroke="#fff" strokeWidth={1.5} />
-          <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#374151">
-            {n.accountNumber || `#${n.accountId}`}
-          </text>
+          {showLabels && (
+            <text x={n.x} y={n.y + 22} textAnchor="middle" fontSize="9" fill="#374151">
+              {n.accountNumber || `#${n.accountId}`}
+            </text>
+          )}
         </g>
       ))}
 
       {/* Center node (drawn last, on top) */}
       <circle cx={CENTER_X} cy={CENTER_Y} r={15} fill="#1e40af" stroke="#fff" strokeWidth={2} />
-      <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#111827">
-        {center.accountNumber || `#${center.accountId}`}
-      </text>
+      {showLabels && (
+        <text x={CENTER_X} y={CENTER_Y + 30} textAnchor="middle" fontSize="10" fontWeight="600" fill="#111827">
+          {center.accountNumber || `#${center.accountId}`}
+        </text>
+      )}
     </svg>
   );
 }
