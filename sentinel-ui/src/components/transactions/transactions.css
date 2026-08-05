@@ -604,3 +604,146 @@
   border-radius: 6px;
   font-size: 0.875rem;
 }
+
+/* ── Command Center theme overrides ──────────────────────────── */
+
+.page-transactions {
+  color: var(--text-primary);
+}
+
+.filter-toggle,
+.btn-reset,
+.btn-apply,
+.filter-input,
+.table-wrapper,
+.detail-modal,
+.filter-modal {
+  border-radius: var(--radius-md);
+}
+
+.filter-toggle,
+.btn-reset,
+.filter-input,
+.filter-modal,
+.detail-modal,
+.table-wrapper,
+.detail-section,
+.loading-state,
+.empty-state,
+.error-banner {
+  background: var(--bg-panel);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.filter-toggle,
+.btn-reset,
+.table-wrapper,
+.detail-modal,
+.filter-modal,
+.error-banner {
+  box-shadow: var(--shadow-soft);
+}
+
+.filter-toggle,
+.btn-reset,
+.filter-modal-close,
+.filter-section-title,
+.detail-label,
+.detail-modal-label,
+.row-count,
+.muted,
+.loading-state,
+.empty-state,
+.loading-more,
+.end-of-list,
+.currency,
+.chevron-cell,
+.tx-cell--secondary {
+  color: var(--text-secondary);
+}
+
+.filter-toggle:hover,
+.btn-reset:hover:not(:disabled),
+.filter-modal-close:hover {
+  background: var(--bg-panel-2);
+}
+
+.filter-toggle--active {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
+.filter-badge,
+.btn-apply {
+  background: var(--accent);
+  color: #07101d;
+}
+
+.btn-apply:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.th {
+  background: rgba(19, 28, 45, 0.96);
+  border-bottom-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.tx-row:nth-child(even):not(.tx-row--expanded) {
+  background: rgba(255,255,255,0.015);
+}
+
+.tx-row:hover,
+.tx-row--expanded {
+  background: rgba(119, 168, 255, 0.08);
+}
+
+.tx-cell,
+.detail-section,
+.detail-section-title,
+.detail-modal-header,
+.filter-modal-header,
+.filter-modal-footer {
+  border-color: rgba(255,255,255,0.06);
+}
+
+.detail-modal-id,
+.detail-value,
+.detail-modal-title-group,
+.filter-modal-title,
+.rule-list li {
+  color: var(--text-primary);
+}
+
+.btn-show-more {
+  background: var(--bg-panel);
+  border-color: var(--border-strong);
+  color: var(--accent-strong);
+}
+
+.btn-show-more:hover {
+  background: var(--accent-soft);
+}
+
+.modal-backdrop {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(8px);
+}
+
+.badge--completed,
+.badge--low,
+.badge--active { background: rgba(103, 232, 166, 0.14); color: var(--green); }
+.badge--pending,
+.badge--medium,
+.badge--open { background: rgba(255, 191, 105, 0.14); color: var(--amber); }
+.badge--failed,
+.badge--critical { background: rgba(255, 127, 150, 0.16); color: var(--red); }
+.badge--credit,
+.badge--acknowledged { background: rgba(119, 168, 255, 0.16); color: var(--accent-strong); }
+.badge--debit,
+.badge--investigating { background: rgba(77, 214, 192, 0.12); color: var(--teal); }
+.badge--inactive,
+.badge--closed,
+.badge--dismissed { background: rgba(159, 175, 199, 0.12); color: var(--text-secondary); }

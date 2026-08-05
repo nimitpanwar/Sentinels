@@ -1,36 +1,72 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './NavBar.css';
 
-export default function NavBar() {
+export default function NavBar({ drawerOpen, setDrawerOpen }) {
+
+  const links = [
+    { to: '/overview', label: 'Overview', code: '01' },
+    { to: '/transactions', label: 'Transactions', code: '02' },
+    { to: '/alerts', label: 'Alerts', code: '03' },
+    { to: '/alert-history', label: 'Alert History', code: '04' },
+    { to: '/network', label: 'Network Insights', code: '05' },
+  ];
+
   return (
-    <nav className="navbar">
-      <span className="navbar-brand">Sentinel</span>
-      <div className="navbar-links">
-        <NavLink
-          to="/transactions"
-          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
+    <>
+      <header className="cc-topbar">
+        <button
+          type="button"
+          className="cc-menu-toggle"
+          onClick={() => setDrawerOpen(open => !open)}
+          aria-label="Toggle navigation"
+          aria-expanded={drawerOpen}
         >
-          Transactions
-        </NavLink>
-        <NavLink
-          to="/alerts"
-          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
-        >
-          Alerts
-        </NavLink>
-        <NavLink
-          to="/alert-history"
-          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
-        >
-          Alert History
-        </NavLink>
-        <NavLink
-          to="/network"
-          className={({ isActive }) => 'navbar-link' + (isActive ? ' navbar-link--active' : '')}
-        >
-          Network Insights
-        </NavLink>
+          <span />
+          <span />
+          <span />
+        </button>
+        <div>
+          <div className="cc-topbar__eyebrow">Sentinel Command Center</div>
+          <div className="cc-topbar__title">Fraud Monitoring Operations</div>
+        </div>
+        <div className="cc-topbar__meta">
+          <span className="cc-signal-dot" />
+          Live Workspace
+        </div>
+      </header>
+
+      <div className={`cc-drawer-backdrop ${drawerOpen ? 'is-open' : ''}`} onClick={() => setDrawerOpen(false)} />
+
+      <nav className={`cc-drawer ${drawerOpen ? 'is-open' : ''}`}>
+        <div className="cc-drawer__brand">
+          <div className="cc-drawer__brand-mark">S</div>
+          <div>
+            <div className="cc-drawer__brand-title">Sentinel</div>
+            <div className="cc-drawer__brand-subtitle">Command Center</div>
+          </div>
+        </div>
+
+        <div className="cc-drawer__section-label">Navigation</div>
+        <div className="cc-drawer__links">
+          {links.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={() => setDrawerOpen(false)}
+              className={({ isActive }) => `cc-drawer__link${isActive ? ' cc-drawer__link--active' : ''}`}
+            >
+              <span className="cc-drawer__link-code">{link.code}</span>
+              <span>{link.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+
+      <div className="cc-statusbar">
+        <span>Interface Mode: Command Center</span>
+        <span>Scope: Overview, Alerts, Transactions, History, Network</span>
       </div>
-    </nav>
+    </>
   );
 }

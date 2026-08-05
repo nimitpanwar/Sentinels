@@ -977,6 +977,429 @@
   font-size: 0.75rem;
 }
 
+/* ── Command Center theme overrides ──────────────────────────── */
+
+.page-alerts,
+.page-alert-detail {
+  color: var(--text-primary);
+}
+
+.alert-card,
+.alerts-table,
+.alerts-table-wrap,
+.alert-detail-card,
+.investigation-compose,
+.investigation-thread,
+.investigation-profile-card,
+.history-modal,
+.history-notes-block,
+.dismiss-modal,
+.sibling-popup,
+.investigation-thread-item,
+.investigation-thread-body,
+.investigation-required-item,
+.recent-tx-table,
+.eval-table,
+.case-alert-item {
+  background: linear-gradient(180deg, rgba(19, 28, 45, 0.96), rgba(16, 23, 38, 0.96));
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.alert-card__label,
+.alerts-export-label,
+.alert-history-subtitle,
+.history-timeline-time,
+.history-timeline-details,
+.history-notes-block,
+.investigation-hint,
+.investigation-profile-progress,
+.investigation-thread-meta,
+.high-risk-copy,
+.high-risk-cooldown,
+.alert-scope-label,
+.alert-scope-hint,
+.alerts-loading,
+.alerts-empty,
+.case-alert-date,
+.alert-detail-dl dt,
+.alert-detail-card-title,
+.eval-table th,
+.recent-tx-table th,
+.alerts-table thead th,
+.muted {
+  color: var(--text-secondary);
+}
+
+.alert-card__value,
+.alert-detail-title,
+.alert-detail-dl dd,
+.history-timeline-title,
+.investigation-thread-subject,
+.investigation-response-title,
+.investigation-blocked-title,
+.sibling-popup__id {
+  color: var(--text-primary);
+}
+
+.alerts-table,
+.alerts-table thead th,
+.alerts-table tbody tr,
+.alert-status-tabs,
+.investigation-tabs,
+.history-timeline,
+.eval-table td,
+.recent-tx-table td,
+.case-alert-item,
+.dismiss-modal__buttons,
+.alerts-tab-export-row {
+  border-color: rgba(255,255,255,0.06);
+}
+
+.alerts-table thead th,
+.recent-tx-table th,
+.eval-table th {
+  background: rgba(19, 28, 45, 0.94);
+}
+
+.alerts-table tbody tr:hover,
+.case-alert-item:hover,
+.case-alert-item--current,
+.recent-tx-table tr.tx-current,
+.eval-table tr.eval-triggered {
+  background: rgba(119, 168, 255, 0.08);
+}
+
+.status-tab,
+.investigation-tab,
+.scope-chip,
+.alert-detail-back,
+.btn--ghost {
+  color: var(--text-secondary);
+}
+
+.status-tab--active,
+.investigation-tab--active,
+.scope-chip--active,
+.btn--secondary,
+.btn--danger {
+  border-color: var(--border-strong);
+}
+
+.status-tab--active,
+.investigation-tab--active,
+.scope-chip--active {
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
+.btn--secondary {
+  background: var(--accent);
+  color: #07101d;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.btn--danger {
+  background: rgba(255, 127, 150, 0.18);
+  color: #ffd2db;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: rgba(255, 127, 150, 0.26);
+}
+
+.btn--ghost {
+  background: var(--bg-panel-2);
+  border-color: var(--border-subtle);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: rgba(119, 168, 255, 0.08);
+}
+
+.alerts-export-format,
+.investigation-input,
+.dismiss-modal__textarea,
+.filter-input {
+  background: var(--bg-panel-2);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.alerts-export-format:focus,
+.investigation-input:focus,
+.dismiss-modal__textarea:focus,
+.filter-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(119, 168, 255, 0.14);
+}
+
+.investigation-terminal-note,
+.investigation-response-block {
+  background: rgba(119, 168, 255, 0.08);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.investigation-required-item.is-done {
+  background: rgba(103, 232, 166, 0.10);
+  border-color: rgba(103, 232, 166, 0.22);
+  color: var(--green);
+}
+
+.investigation-required-item.is-missing,
+.high-risk-panel,
+.investigation-blocked-box,
+.alert-inline-bar--error,
+.alert-action-error {
+  background: rgba(255, 127, 150, 0.12);
+  border-color: rgba(255, 127, 150, 0.24);
+  color: #ffc1cf;
+}
+
+.alert-action-success {
+  color: var(--green);
+}
+
+.dismiss-overlay {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(10px);
+}
+
+.badge--mid,
+.badge--investigating { background: rgba(255, 191, 105, 0.16); color: var(--amber); }
+.badge--escalated { background: rgba(255, 127, 150, 0.16); color: var(--red); }
+.badge--acknowledged,
+.badge--in-review { background: rgba(119, 168, 255, 0.16); color: var(--accent-strong); }
+.badge--dismissed { background: rgba(159, 175, 199, 0.12); color: var(--text-secondary); }
+
+/* ── Contrast polish for dark theme ──────────────────────────── */
+
+.page-alerts .page-title,
+.page-alert-detail .alert-detail-title,
+.alerts-table td,
+.alert-detail-dl dd,
+.alert-detail-notes,
+.case-alert-id,
+.history-summary-grid,
+.history-notes-block p,
+.history-timeline-title,
+.history-timeline-details,
+.investigation-thread-body,
+.investigation-response-grid dd,
+.investigation-checkbox-row,
+.high-risk-title,
+.investigation-required-item,
+.recent-tx-table td,
+.eval-table td,
+.alert-history-note-cell,
+.sibling-popup__dl dd {
+  color: #edf3ff;
+}
+
+.alert-card__label,
+.alerts-table thead th,
+.alert-detail-card-title,
+.alert-detail-dl dt,
+.history-timeline-time,
+.history-notes-block,
+.investigation-thread-meta,
+.investigation-profile-progress,
+.investigation-hint,
+.high-risk-copy,
+.high-risk-cooldown,
+.alert-scope-label,
+.alert-scope-hint,
+.recent-tx-table th,
+.eval-table th,
+.case-alert-date,
+.alerts-export-label,
+.alerts-loading,
+.alerts-empty,
+.alert-history-subtitle {
+  color: #aebbd3;
+}
+
+.alert-card__value,
+.alert-detail-card-title,
+.investigation-thread-subject,
+.investigation-response-title,
+.investigation-blocked-title,
+.dismiss-modal__title,
+.sibling-popup__id {
+  color: #f7fbff;
+}
+
+.status-tab,
+.investigation-tab,
+.scope-chip,
+.alert-detail-back,
+.btn--ghost {
+  color: #b8c6dd;
+}
+
+.status-tab:hover,
+.investigation-tab:hover,
+.scope-chip:hover:not(:disabled),
+.alert-detail-back:hover {
+  color: #f0f5ff;
+}
+
+.status-tab--active,
+.investigation-tab--active,
+.scope-chip--active {
+  color: #ffffff;
+}
+
+.investigation-thread-item__top .mono,
+.alert-detail-dl .mono,
+.alerts-table .mono,
+.alerts-table .num,
+.recent-tx-table .num,
+.eval-table .num {
+  color: #dce6f8;
+}
+
+.btn--secondary,
+.btn--danger {
+  color: #f7fbff;
+}
+
+.btn--secondary {
+  background: linear-gradient(135deg, #78a9ff, #5c88ff);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8ab4ff, #6a93ff);
+}
+
+.btn--ghost {
+  color: #d7e3f7;
+  border-color: rgba(119, 168, 255, 0.16);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.alerts-export-format,
+.investigation-input,
+.dismiss-modal__textarea,
+.filter-input {
+  color: #f0f5ff;
+}
+
+.alerts-export-format::placeholder,
+.investigation-input::placeholder,
+.dismiss-modal__textarea::placeholder,
+.filter-input::placeholder {
+  color: #7f90ab;
+}
+
+.investigation-tabs {
+  background: rgba(19, 28, 45, 0.92);
+  border-color: rgba(119, 168, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.investigation-tab {
+  color: #adc0dc;
+}
+
+.investigation-tab:hover {
+  color: #f0f5ff;
+  background: rgba(119, 168, 255, 0.08);
+}
+
+.investigation-tab--active {
+  background: linear-gradient(180deg, rgba(119, 168, 255, 0.18), rgba(119, 168, 255, 0.08));
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(119, 168, 255, 0.18);
+}
+
+/* ── Specific dark-theme fixes for case tile + scope toggle ─── */
+
+.page-alert-detail .alert-detail-card,
+.page-alert-detail .alert-detail-card--full,
+.page-alert-detail .case-alert-item,
+.page-alert-detail .history-modal,
+.page-alert-detail .history-notes-block {
+  background: linear-gradient(180deg, rgba(19, 28, 45, 0.96), rgba(16, 23, 38, 0.96));
+  border-color: rgba(255,255,255,0.08);
+  color: #edf3ff;
+}
+
+.page-alert-detail .alert-detail-card-title,
+.page-alert-detail .alert-detail-dl dt,
+.page-alert-detail .case-alert-date {
+  color: #aebbd3;
+}
+
+.page-alert-detail .alert-detail-dl dd,
+.page-alert-detail .case-alert-id,
+.page-alert-detail .case-alert-item,
+.page-alert-detail .alert-detail-notes {
+  color: #edf3ff;
+}
+
+.page-alert-detail .case-alert-item:hover,
+.page-alert-detail .case-alert-item--current {
+  background: rgba(119, 168, 255, 0.08);
+  border-color: rgba(119, 168, 255, 0.2);
+}
+
+.page-alert-detail .alert-scope-segment {
+  border-color: rgba(119, 168, 255, 0.16);
+  background: rgba(255,255,255,0.02);
+}
+
+.page-alert-detail .scope-chip {
+  background: transparent;
+  color: #b9c8df;
+}
+
+.page-alert-detail .scope-chip:hover:not(:disabled) {
+  background: rgba(119, 168, 255, 0.08);
+  color: #ffffff;
+}
+
+.page-alert-detail .scope-chip--active {
+  background: linear-gradient(135deg, rgba(119, 168, 255, 0.2), rgba(119, 168, 255, 0.08));
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(119, 168, 255, 0.18);
+}
+
+.page-alert-detail .alert-scope-hint,
+.page-alert-detail .alert-scope-label {
+  color: #aebbd3;
+}
+
+.page-alert-detail .sibling-popup {
+  background: linear-gradient(180deg, rgba(19, 28, 45, 0.98), rgba(16, 23, 38, 0.98));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: var(--shadow-panel);
+  color: #edf3ff;
+}
+
+.page-alert-detail .sibling-popup__header,
+.page-alert-detail .sibling-popup__footer {
+  border-color: rgba(255,255,255,0.06);
+}
+
+.page-alert-detail .sibling-popup__dl dt {
+  color: #aebbd3;
+}
+
+.page-alert-detail .sibling-popup__dl dd,
+.page-alert-detail .sibling-popup__title-row,
+.page-alert-detail .sibling-popup__id {
+  color: #edf3ff;
+}
+
 /* ── Dismiss modal ────────────────────────────────────────────── */
 .dismiss-overlay {
   position: fixed;
