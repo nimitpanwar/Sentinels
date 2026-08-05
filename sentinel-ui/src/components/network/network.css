@@ -417,6 +417,171 @@
 .legend-dot--guarded { background: #f59e0b; }
 .legend-dot--low { background: #10b981; }
 
+/* ── Command Center theme overrides ──────────────────────────── */
+
+.page-network {
+  color: var(--text-primary);
+}
+
+.network-toolbar select,
+.network-toolbar input,
+.summary-card,
+.network-detail-panel,
+.network-reason,
+.network-analyst-summary,
+.network-graph-svg,
+.network-breadcrumb-chip,
+.network-graph-controls input,
+.network-graph-controls select {
+  background: var(--bg-panel);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.summary-card,
+.network-detail-panel,
+.network-reason,
+.network-analyst-summary {
+  box-shadow: var(--shadow-soft);
+}
+
+.summary-card-value,
+.network-summary-title,
+.network-legend-title {
+  color: var(--text-primary);
+}
+
+.summary-card-label,
+.network-run-status,
+.network-context-sub,
+.network-summary-kicker,
+.network-trend-copy,
+.network-trend-meta,
+.network-signal-label,
+.network-graph-meta,
+.network-graph-controls label,
+.network-legend,
+.network-timeline-label {
+  color: var(--text-secondary);
+}
+
+.network-table th {
+  border-bottom-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.network-table td {
+  border-bottom-color: rgba(255,255,255,0.05);
+}
+
+.network-table tbody tr:hover,
+.network-table tbody tr.is-selected {
+  background: rgba(119, 168, 255, 0.08);
+}
+
+.score-bar-track {
+  background: rgba(255,255,255,0.08);
+}
+
+.network-pill--high { background: rgba(255, 127, 150, 0.18); color: var(--red); }
+.network-pill--elevated { background: rgba(255, 191, 105, 0.18); color: var(--amber); }
+.network-pill--guarded { background: rgba(119, 168, 255, 0.18); color: var(--accent-strong); }
+.network-pill--low { background: rgba(77, 214, 192, 0.16); color: var(--teal); }
+.network-pill--neutral { background: rgba(159, 175, 199, 0.12); color: var(--text-secondary); }
+
+.network-flag-chip {
+  background: rgba(255, 191, 105, 0.12);
+  color: var(--amber);
+  border-color: rgba(255, 191, 105, 0.25);
+}
+
+.network-graph-svg {
+  background: linear-gradient(180deg, rgba(19, 28, 45, 0.96), rgba(16, 23, 38, 0.96));
+}
+
+.network-breadcrumb-chip.is-active,
+.network-breadcrumb-chip:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.legend-dot--high { background: var(--red); }
+.legend-dot--elevated { background: var(--amber); }
+.legend-dot--guarded { background: var(--accent); }
+.legend-dot--low { background: var(--teal); }
+
+/* ── Contrast polish for dark theme ──────────────────────────── */
+
+.page-network .page-title,
+.summary-card-value,
+.network-table td,
+.network-summary-title,
+.network-summary-bullets,
+.network-reason,
+.network-signal-value,
+.network-trend-copy,
+.network-trend-meta,
+.network-timeline-label,
+.network-breadcrumb-chip,
+.network-graph-meta,
+.network-legend,
+.network-legend-title {
+  color: #edf3ff;
+}
+
+.summary-card-label,
+.network-run-status,
+.network-summary-kicker,
+.network-signal-label,
+.network-context-sub,
+.network-trend-meta span,
+.network-graph-controls label,
+.network-graph-meta,
+.network-timeline-label,
+.network-table th,
+.muted {
+  color: #afbdd5;
+}
+
+.network-table .mono,
+.network-table .num,
+.network-breakdown .mono,
+.network-summary-metrics,
+.network-signal-grid .mono {
+  color: #dce7f8;
+}
+
+.network-toolbar select,
+.network-toolbar input,
+.network-graph-controls input,
+.network-graph-controls select {
+  color: #f3f7ff;
+}
+
+.network-toolbar select::placeholder,
+.network-toolbar input::placeholder,
+.network-graph-controls input::placeholder {
+  color: #7f90ab;
+}
+
+.network-reason {
+  color: #ffe0a9;
+}
+
+.network-pill--neutral {
+  color: #d3def1;
+}
+
+.network-breadcrumb-chip {
+  color: #d0dbef;
+}
+
+.network-breadcrumb-chip.is-active,
+.network-breadcrumb-chip:hover {
+  color: #ffffff;
+}
+
 @media (max-width: 980px) {
   .network-detail-panel {
     grid-template-columns: 1fr;

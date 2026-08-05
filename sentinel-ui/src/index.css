@@ -2,11 +2,107 @@
   box-sizing: border-box;
 }
 
+:root {
+  --font-sans: "Inter", "Segoe UI", "SF Pro Display", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  --bg-app: #070b14;
+  --bg-elevated: #101726;
+  --bg-panel: #131c2d;
+  --bg-panel-2: #172235;
+  --bg-overlay: rgba(7, 11, 20, 0.84);
+
+  --text-primary: #edf3ff;
+  --text-secondary: #9fafc7;
+  --text-muted: #70809c;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(126, 168, 255, 0.28);
+
+  --accent: #77a8ff;
+  --accent-strong: #9cc2ff;
+  --accent-soft: rgba(119, 168, 255, 0.14);
+  --teal: #4dd6c0;
+  --amber: #ffbf69;
+  --red: #ff7f96;
+  --green: #67e8a6;
+
+  --shadow-panel: 0 22px 50px rgba(0, 0, 0, 0.32);
+  --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.22);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --drawer-width: 292px;
+  --topbar-height: 74px;
+  --statusbar-height: 52px;
+}
+
 body {
   margin: 0;
-  background: #f3f4f6;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(119, 168, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #08101d 0%, #05080f 100%);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.page-title {
+  margin: 0;
+  font-size: clamp(1.7rem, 2vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.row-count,
+.muted {
+  color: var(--text-secondary);
+}
+
+.mono,
+.num {
+  font-family: var(--font-mono);
+}
+
+.error-banner,
+.loading-state {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-soft);
 }
 
 /* ── Top-level page nav (Transactions / Network Insights) ────────────── */

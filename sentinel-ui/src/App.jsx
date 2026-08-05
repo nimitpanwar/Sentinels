@@ -6,8 +6,10 @@ import AlertsPage from './components/alerts/AlertsPage';
 import AlertDetailPage from './components/alerts/AlertDetailPage';
 import AlertHistoryPage from './components/alerts/AlertHistoryPage';
 import NetworkPage from './components/network/NetworkPage';
+import OverviewPage from './components/overview/OverviewPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
 import { fetchAlerts } from './api/alertsApi';
+import './App.css';
 
 const STALE_MS = 30_000;
 
@@ -15,6 +17,7 @@ export default function App() {
   const [alerts, setAlerts]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const lastFetchedAt         = useRef(null);
 
   const loadAlerts = useCallback(async ({ background = false } = {}) => {
@@ -56,28 +59,40 @@ export default function App() {
   }
 
   return (
-    <>
-      <NavBar />
-      <Routes>
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/alerts"
-          element={
-            <AlertsPage
-              alerts={alerts}
-              loading={loading}
-              error={error}
-              onMount={ensureLoaded}
-            />
-          }
-        />
-        <Route path="/alert-history" element={<AlertHistoryPage />} />
-        <Route path="/network" element={<NetworkPage />} />
-        <Route path="/alerts/:id"
-          element={<AlertDetailPage updateAlert={updateAlert} refreshAlerts={loadAlerts} />}
-        />
-        <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
-        <Route path="*" element={<Navigate to="/transactions" replace />} />
-      </Routes>
-    </>
+    <div className={`app-shell${drawerOpen ? ' app-shell--drawer-open' : ''}`}>
+      <NavBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+      <div className="app-content">
+        <Routes>
+          <Route path="/overview"
+            element={
+              <OverviewPage
+                alerts={alerts}
+                loading={loading}
+                error={error}
+                onMount={ensureLoaded}
+              />
+            }
+          />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/alerts"
+            element={
+              <AlertsPage
+                alerts={alerts}
+                loading={loading}
+                error={error}
+                onMount={ensureLoaded}
+              />
+            }
+          />
+          <Route path="/alert-history" element={<AlertHistoryPage />} />
+          <Route path="/network" element={<NetworkPage />} />
+          <Route path="/alerts/:id"
+            element={<AlertDetailPage updateAlert={updateAlert} refreshAlerts={loadAlerts} />}
+          />
+          <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
+          <Route path="*" element={<Navigate to="/overview" replace />} />
+        </Routes>
+      </div>
+    </div>
   );
 }
