@@ -743,11 +743,7 @@ export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
                           : <span className="badge badge--closed">No</span>}
                         </td>
                         <td className="num">{e.riskScore != null ? parseFloat(e.riskScore).toFixed(3) : '—'}</td>
-<<<<<<< HEAD
-                        <td style={{ color: '#ffffff', fontSize: '0.78rem' }}>{e.reason ?? '—'}</td>
-=======
                         <td style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{e.reason ?? '—'}</td>
->>>>>>> master
                       </tr>
                     ))}
                   </tbody>

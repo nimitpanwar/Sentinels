@@ -9,8 +9,6 @@ import NetworkPage from './components/network/NetworkPage';
 import AgentPage from './components/agent/AgentPage';
 import OverviewPage from './components/overview/OverviewPage';
 import CustomerResponsePage from './components/investigation/CustomerResponsePage';
-import OverviewPage from './components/overview/OverviewPage';
-import AssistantPage from './components/assistant/AssistantPage';
 import { fetchAlerts } from './api/alertsApi';
 import './App.css';
 
@@ -62,13 +60,8 @@ export default function App() {
   }
 
   return (
-<<<<<<< HEAD
-    <>
-      <NavBar />
-=======
     <div className={`app-shell${drawerOpen ? ' app-shell--drawer-open' : ''}`}>
       <NavBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
->>>>>>> master
       <div className="app-content">
         <Routes>
           <Route path="/overview"
@@ -82,10 +75,6 @@ export default function App() {
             }
           />
           <Route path="/transactions" element={<TransactionsPage />} />
-<<<<<<< HEAD
-          <Route path="/assistant" element={<AssistantPage />} />
-=======
->>>>>>> master
           <Route path="/alerts"
             element={
               <AlertsPage
@@ -96,16 +85,6 @@ export default function App() {
               />
             }
           />
-<<<<<<< HEAD
-          <Route path="/alerts/:id"
-            element={<AlertDetailPage updateAlert={updateAlert} />}
-          />
-          <Route path="/investigation/respond/:token" element={<CustomerResponsePage />} />
-          <Route path="*" element={<Navigate to="/transactions" replace />} />
-        </Routes>
-      </div>
-    </>
-=======
           <Route path="/alert-history" element={<AlertHistoryPage />} />
           <Route path="/network" element={<NetworkPage />} />
           <Route path="/agent" element={<AgentPage />} />
@@ -117,6 +96,5 @@ export default function App() {
         </Routes>
       </div>
     </div>
->>>>>>> master
   );
 }

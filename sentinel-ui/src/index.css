@@ -32,10 +32,6 @@
   box-sizing: border-box;
 }
 
-<<<<<<< HEAD
-html, body, #root {
-  min-height: 100%;
-=======
 :root {
   --font-sans: "Inter", "Segoe UI", "SF Pro Display", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Roboto Mono", "SFMono-Regular", Consolas, monospace;
@@ -139,7 +135,6 @@ a {
   border-radius: var(--radius-md);
   padding: var(--space-5);
   box-shadow: var(--shadow-soft);
->>>>>>> master
 }
 
 body {
@@ -170,13 +165,8 @@ body {
   display: flex;
   gap: 4px;
   padding: 12px 32px 0;
-<<<<<<< HEAD
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-color);
-=======
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
->>>>>>> master
 }
 
 .app-nav-tab {
@@ -184,17 +174,11 @@ body {
   border: none;
   border-bottom: 2px solid transparent;
   padding: 10px 14px;
-<<<<<<< HEAD
-  font-size: 0.95em;
-  font-weight: 600;
-  color: var(--text-dim);
-=======
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
->>>>>>> master
   cursor: pointer;
 }
 
@@ -203,11 +187,6 @@ body {
 }
 
 .app-nav-tab.is-active {
-<<<<<<< HEAD
-  color: var(--text-primary);
-  border-bottom-color: var(--accent-critical);
-=======
   color: var(--accent);
   border-bottom-color: var(--accent);
->>>>>>> master
 }

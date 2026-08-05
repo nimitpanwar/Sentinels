@@ -4,13 +4,6 @@
  * Shared helpers for the Network Insights page components.
  */
 export function riskColor(score) {
-<<<<<<< HEAD
-  if (score === null || score === undefined) return '#8a8d91';
-  if (score >= 75) return '#ff4c4c';
-  if (score >= 60) return '#ff9900';
-  if (score >= 40) return '#ffcc00';
-  return '#00ff88';
-=======
   if (score === null || score === undefined) return '#ffffff';
   if (score >= 75) return '#ff4c4c';
   if (score >= 60) return '#ffcc00';
@@ -143,5 +136,4 @@ export function dominantSignalLabel(row, evidence = null) {
   if (exposure >= growth && exposure >= shared) return 'Exposure-led';
   if (growth >= exposure && growth >= shared) return 'Growth-led';
   return 'Linkage-led';
->>>>>>> master
 }

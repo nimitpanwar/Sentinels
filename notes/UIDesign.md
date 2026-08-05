@@ -5,14 +5,11 @@
 **Industry:** Fintech / Cybersecurity
 **User Persona:** High-stakes Operations Specialist (Alert Triage & Investigation)
 **Core Aesthetic:** High-density, data-driven "Command Center" interface.
-<<<<<<< HEAD
-=======
 
 ---
 
 ## Design System Tokens
 
->>>>>>> master
 ### 1. Color Palette
 The interface uses a strict, low-luminance palette to reduce eye strain during long shifts while maintaining high contrast for critical information.
 
@@ -56,11 +53,7 @@ The interface uses a strict, low-luminance palette to reduce eye strain during l
 
 ---
 
-<<<<<<< HEAD
-
-=======
 ## Technical Integration Strategy
->>>>>>> master
 To replicate this in your project:
 1. **Global CSS:** Define the dark-mode tokens as CSS variables.
 2. **Layout Engine:** Use a `flex` or `grid` shell with a `h-screen overflow-hidden` container to maintain the "cockpit" feel.

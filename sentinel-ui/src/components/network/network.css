@@ -10,11 +10,7 @@
   max-width: 1400px;
   margin: 0 auto;
   font-family: var(--font-sans);
-<<<<<<< HEAD
-  color: var(--text-primary, #ffffff);
-=======
   color: var(--text-primary);
->>>>>>> master
 }
 
 .network-toolbar {
@@ -28,45 +24,20 @@
 .network-toolbar select,
 .network-toolbar input {
   padding: 6px 10px;
-<<<<<<< HEAD
-  border: 1px solid var(--border-color, #38393d);
-  border-radius: var(--radius, 2px);
-  background: var(--bg-surface, #1a1b1f);
-  color: var(--text-primary, #ffffff);
-=======
   border: 1px solid var(--border-subtle);
   border-radius: 2px;
->>>>>>> master
   font-size: 0.9em;
 }
 
 .btn-run-now {
-<<<<<<< HEAD
-  background: var(--text-primary, #ffffff);
-  color: var(--bg-deepest, #0d0e12);
-  border: none;
-  border-radius: var(--radius, 2px);
-=======
   background: var(--accent);
   color: var(--bg-deep);
   border: none;
   border-radius: 2px;
->>>>>>> master
   padding: 7px 14px;
   font-size: 0.9em;
   font-weight: 700;
   text-transform: uppercase;
-<<<<<<< HEAD
-  letter-spacing: 0.03em;
-  cursor: pointer;
-}
-.btn-run-now:hover { background: #d8d9db; }
-.btn-run-now:disabled { background: var(--text-dimmer, #5b5d62); cursor: not-allowed; }
-
-.network-run-status {
-  font-size: 0.85em;
-  color: var(--text-dim, #8a8d91);
-=======
   letter-spacing: 0.04em;
   cursor: pointer;
 }
@@ -76,7 +47,6 @@
 .network-run-status {
   font-size: 0.85em;
   color: var(--text-secondary);
->>>>>>> master
 }
 
 /* ── Summary cards ────────────────────────────────────────────── */
@@ -89,35 +59,21 @@
 }
 
 .summary-card {
-<<<<<<< HEAD
-  background: var(--bg-surface, #1a1b1f);
-  border: 1px solid var(--border-color, #38393d);
-  border-radius: var(--radius, 2px);
-=======
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 2px;
->>>>>>> master
   padding: 16px 18px;
 }
 
 .summary-card-value {
   font-size: 1.8em;
   font-weight: 700;
-<<<<<<< HEAD
-  color: var(--text-primary, #ffffff);
-=======
   color: var(--text-primary);
->>>>>>> master
 }
 
 .summary-card-label {
   font-size: 0.8em;
-<<<<<<< HEAD
-  color: var(--text-dim, #8a8d91);
-=======
   color: var(--text-secondary);
->>>>>>> master
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 4px;
@@ -134,13 +90,8 @@
 .network-table th {
   text-align: left;
   padding: 8px 12px;
-<<<<<<< HEAD
-  border-bottom: 2px solid var(--border-color, #38393d);
-  color: var(--text-dim, #8a8d91);
-=======
   border-bottom: 2px solid var(--border-subtle);
   color: var(--text-secondary);
->>>>>>> master
   font-size: 0.78em;
   font-weight: 700;
   text-transform: uppercase;
@@ -149,12 +100,7 @@
 
 .network-table td {
   padding: 10px 12px;
-<<<<<<< HEAD
-  border-bottom: 1px solid var(--border-color, #38393d);
-  color: var(--text-primary, #ffffff);
-=======
   border-bottom: 1px solid var(--border-subtle);
->>>>>>> master
 }
 
 .network-table-context {
@@ -197,32 +143,19 @@
 }
 
 .network-table tbody tr:hover {
-<<<<<<< HEAD
-  background: rgba(255,255,255,0.05);
-}
-
-.network-table tbody tr.is-selected {
-  background: rgba(255,76,76,0.08);
-=======
   background: var(--bg-elevated);
 }
 
 .network-table tbody tr.is-selected {
   background: var(--accent-soft);
->>>>>>> master
 }
 
 .score-bar-track {
   display: inline-block;
   width: 80px;
   height: 8px;
-<<<<<<< HEAD
-  background: var(--bg-deepest, #0d0e12);
-  border-radius: 999px;
-=======
   background: var(--bg-elevated);
   border-radius: 2px;
->>>>>>> master
   overflow: hidden;
   vertical-align: middle;
   margin-right: 8px;
@@ -237,13 +170,8 @@
 
 .network-detail-panel {
   margin-top: 24px;
-<<<<<<< HEAD
-  border: 1px solid var(--border-color, #38393d);
-  border-radius: var(--radius, 2px);
-=======
   border: 1px solid var(--border-subtle);
   border-radius: 2px;
->>>>>>> master
   padding: 20px;
   display: grid;
   grid-template-columns: 1.3fr 1fr;
@@ -251,21 +179,12 @@
 }
 
 .network-reason {
-<<<<<<< HEAD
-  background: rgba(255,204,0,0.1);
-  border: 1px solid rgba(255,204,0,0.35);
-  border-radius: var(--radius, 2px);
-  padding: 12px 14px;
-  font-size: 0.9em;
-  color: var(--accent-warning, #ffcc00);
-=======
   background: rgba(255, 204, 0, 0.08);
   border: 1px solid rgba(255, 204, 0, 0.4);
   border-radius: 2px;
   padding: 12px 14px;
   font-size: 0.9em;
   color: var(--amber);
->>>>>>> master
   margin-bottom: 16px;
 }
 
@@ -346,11 +265,7 @@
 }
 
 .network-signal-label {
-<<<<<<< HEAD
-  color: var(--text-dim, #8a8d91);
-=======
   color: var(--text-secondary);
->>>>>>> master
   display: block;
 }
 
@@ -370,11 +285,7 @@
 
 .network-timeline-bar {
   flex: 1;
-<<<<<<< HEAD
-  background: var(--accent-warning, #ffcc00);
-=======
   background: var(--accent-strong);
->>>>>>> master
   border-radius: 2px 2px 0 0;
   min-height: 2px;
 }
@@ -418,10 +329,6 @@
 .network-graph-svg {
   width: 100%;
   height: 280px;
-<<<<<<< HEAD
-  background: var(--bg-deepest, #0d0e12);
-  border-radius: var(--radius, 2px);
-=======
   background: var(--bg-elevated);
   border-radius: 2px;
   border: 1px solid var(--border-subtle);
@@ -696,5 +603,4 @@
   .network-graph-svg {
     height: 320px;
   }
->>>>>>> master
 }
