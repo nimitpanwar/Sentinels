@@ -131,7 +131,6 @@ export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
         setAnalystNote(alertData.case?.investigationAnalystNote ?? '');
         setChecklistComplete(Boolean(alertData.case?.investigationChecklistComplete));
         setHighRiskJustification(alertData.case?.highRiskJustification ?? '');
-        const txId   = alertData.transaction?.transactionId;
         const acctId = alertData.transaction?.account?.accountId;
         const caseId = alertData.case?.caseId;
 
@@ -149,11 +148,11 @@ export default function AlertDetailPage({ updateAlert, refreshAlerts }) {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, updateAlert]);
 
   useEffect(() => {
     previousResponseCountRef.current = thread.filter(item => item.responseStatus === 'RESPONDED').length;
-  }, [id]);
+  }, [thread]);
 
   useEffect(() => {
     if (activeTab !== 'investigation') {

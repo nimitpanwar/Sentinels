@@ -29,14 +29,11 @@ export default function NetworkAccountDetail({
   onSelectNode,
   onSelectTrailAccount,
 }) {
-  if (!detail) {
-    return <div className="loading-state">Select an account above to see its evidence and neighborhood.</div>;
-  }
-
-  const { latest, timeline } = detail;
   const [showLabels, setShowLabels] = useState(true);
   const [minSharedPayees, setMinSharedPayees] = useState(1);
   const [neighborCap, setNeighborCap] = useState(30);
+  const latest = detail?.latest ?? null;
+  const timeline = detail?.timeline ?? [];
 
   const filteredGraph = useMemo(() => {
     if (!graph || !graph.nodes?.length) return graph;
@@ -67,13 +64,17 @@ export default function NetworkAccountDetail({
     };
   }, [graph, minSharedPayees, neighborCap]);
 
-  const evidence = parseEvidence(latest.evidence);
+  const evidence = parseEvidence(latest?.evidence);
   const topSignals = summarizeTopSignals(evidence, latest);
   const redFlags = deriveRedFlags(evidence, latest);
   const trend = trendSummary(timeline);
-  const freshness = freshnessLabel(latest.computedAt);
+  const freshness = freshnessLabel(latest?.computedAt);
 
   const maxScore = Math.max(...timeline.map((t) => t.networkRiskScore), 1);
+
+  if (!detail || !latest) {
+    return <div className="loading-state">Select an account above to see its evidence and neighborhood.</div>;
+  }
 
   return (
     <div className="network-detail-panel">
