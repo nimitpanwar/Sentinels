@@ -1,0 +1,4 @@
+target/
+*.log
+.env
+.mvn/wrapper/maven-wrapper.jar
