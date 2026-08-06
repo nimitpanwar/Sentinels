@@ -47,7 +47,7 @@ export default function NavBar({ drawerOpen, setDrawerOpen }) {
 
       <nav className={`cc-drawer ${drawerOpen ? 'is-open' : ''}`}>
         <div className="cc-drawer__brand">
-          <div className="cc-drawer__brand-mark">S</div>
+          <img src={logo} alt="Sentinel" className="cc-drawer__brand-logo" />
           <div>
             <div className="cc-drawer__brand-title">Sentinel</div>
             <div className="cc-drawer__brand-subtitle">Command Center</div>
