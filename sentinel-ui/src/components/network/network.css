@@ -475,7 +475,7 @@
 }
 
 .network-table td {
-  border-bottom-color: rgba(255,255,255,0.05);
+  border-bottom-color: var(--hairline-2);
 }
 
 .network-table tbody tr:hover,
@@ -484,7 +484,7 @@
 }
 
 .score-bar-track {
-  background: rgba(255,255,255,0.08);
+  background: var(--hairline-4);
 }
 
 .network-pill--high { background: rgba(255, 76, 76, 0.18); color: var(--red); }
@@ -500,7 +500,7 @@
 }
 
 .network-graph-svg {
-  background: linear-gradient(180deg, rgba(26, 27, 31, 0.96), rgba(13, 14, 18, 0.96));
+  background: var(--panel-gradient);
 }
 
 .network-breadcrumb-chip.is-active,

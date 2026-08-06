@@ -77,6 +77,71 @@
   --drawer-width: 292px;
   --topbar-height: 64px;
   --statusbar-height: 52px;
+
+  /* Structural surface tokens (dark defaults) — theme-aware equivalents of
+     literal colors that used to be hardcoded across component stylesheets. */
+  --panel-gradient: linear-gradient(180deg, rgba(26, 27, 31, 0.96), rgba(13, 14, 18, 0.96));
+  --panel-gradient-strong: linear-gradient(180deg, rgba(26, 27, 31, 0.98), rgba(13, 14, 18, 0.98));
+  --panel-solid: rgba(26, 27, 31, 0.94);
+  --hairline-1: rgba(255, 255, 255, 0.02);
+  --hairline-2: rgba(255, 255, 255, 0.05);
+  --hairline-3: rgba(255, 255, 255, 0.06);
+  --hairline-4: rgba(255, 255, 255, 0.08);
+  --topbar-bg: rgba(10, 14, 24, 0.88);
+  --statusbar-bg: rgba(10, 14, 24, 0.92);
+}
+
+/* ================================================================
+   Light theme overrides — see notes/UIDesignLight.md for the source
+   specification. Applied via [data-theme="light"] on <html>, toggled
+   at runtime by the operator (see NavBar theme switch).
+   ================================================================ */
+:root[data-theme='light'] {
+  --bg-primary: #fcf8f8;
+  --bg-surface: #f7f3f2;
+  --bg-surface-alt: #f0eae9;
+  --bg-deepest: #ffffff;
+  --text-primary: #121317;
+  --text-dim: #666666;
+  --text-dimmer: #666666;
+  --accent-critical: #ff4c4c;
+  --accent-success: #00aa66;
+  --accent-warning: #e6b800;
+  --border-color: #ddd9d9;
+
+  --bg-app: #fcf8f8;
+  --bg-elevated: #ffffff;
+  --bg-panel: #f7f3f2;
+  --bg-panel-2: #f0eae9;
+  --bg-deep: #ffffff;
+  --bg-overlay: rgba(18, 19, 23, 0.4);
+
+  --text-secondary: #444444;
+  --text-muted: #666666;
+
+  --border-subtle: #ddd9d9;
+  --border-strong: rgba(0, 170, 102, 0.35);
+
+  --accent: #00aa66;
+  --accent-strong: #009957;
+  --accent-soft: rgba(0, 170, 102, 0.12);
+  --teal: #00aa66;
+  --amber: #e6b800;
+  --red: #ff4c4c;
+  --green: #00aa66;
+
+  --shadow-panel: 0 18px 40px rgba(18, 19, 23, 0.1);
+  --shadow-soft: 0 8px 22px rgba(18, 19, 23, 0.08);
+
+  --panel-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 243, 242, 0.97));
+  --panel-gradient-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 243, 242, 0.98));
+  --panel-solid: rgba(247, 243, 242, 0.94);
+  --hairline-1: rgba(18, 19, 23, 0.04);
+  --hairline-2: rgba(18, 19, 23, 0.06);
+  --hairline-3: rgba(18, 19, 23, 0.08);
+  --hairline-4: rgba(18, 19, 23, 0.12);
+  --topbar-bg: rgba(252, 248, 248, 0.88);
+  --statusbar-bg: rgba(252, 248, 248, 0.92);
 }
 
 body {
@@ -84,6 +149,7 @@ body {
   background: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {

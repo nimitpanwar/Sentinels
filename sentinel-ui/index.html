@@ -11,6 +11,18 @@
       rel="stylesheet"
     />
     <title>sentinel-ui</title>
+    <script>
+      (function () {
+        try {
+          var theme = window.localStorage.getItem('sentinel-theme');
+          if (theme === 'light' || theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+        } catch (e) {
+          /* localStorage unavailable — default (dark) theme applies. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

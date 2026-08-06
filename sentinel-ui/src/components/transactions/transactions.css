@@ -693,13 +693,13 @@
 }
 
 .th {
-  background: rgba(26, 27, 31, 0.96);
+  background: var(--panel-solid);
   border-bottom-color: var(--border-subtle);
   color: var(--text-muted);
 }
 
 .tx-row:nth-child(even):not(.tx-row--expanded) {
-  background: rgba(255,255,255,0.015);
+  background: var(--hairline-1);
 }
 
 .tx-row:hover,
@@ -713,7 +713,7 @@
 .detail-modal-header,
 .filter-modal-header,
 .filter-modal-footer {
-  border-color: rgba(255,255,255,0.06);
+  border-color: var(--hairline-3);
 }
 
 .detail-modal-id,

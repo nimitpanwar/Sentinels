@@ -1060,7 +1060,7 @@
 .recent-tx-table,
 .eval-table,
 .case-alert-item {
-  background: linear-gradient(180deg, rgba(26, 27, 31, 0.96), rgba(13, 14, 18, 0.96));
+  background: var(--panel-gradient);
   border-color: var(--border-subtle);
   color: var(--text-primary);
   box-shadow: var(--shadow-soft);
@@ -1113,13 +1113,13 @@
 .case-alert-item,
 .dismiss-modal__buttons,
 .alerts-tab-export-row {
-  border-color: rgba(255,255,255,0.06);
+  border-color: var(--hairline-3);
 }
 
 .alerts-table thead th,
 .recent-tx-table th,
 .eval-table th {
-  background: rgba(26, 27, 31, 0.94);
+  background: var(--panel-solid);
 }
 
 .alerts-table tbody tr:hover,
@@ -1360,9 +1360,9 @@
 }
 
 .investigation-tabs {
-  background: rgba(26, 27, 31, 0.92);
+  background: var(--panel-solid);
   border-color: rgba(0, 255, 136, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+  box-shadow: inset 0 0 0 1px var(--hairline-1);
 }
 
 .investigation-tab {
@@ -1387,8 +1387,8 @@
 .page-alert-detail .case-alert-item,
 .page-alert-detail .history-modal,
 .page-alert-detail .history-notes-block {
-  background: linear-gradient(180deg, rgba(26, 27, 31, 0.96), rgba(13, 14, 18, 0.96));
-  border-color: rgba(255,255,255,0.08);
+  background: var(--panel-gradient);
+  border-color: var(--hairline-4);
   color: var(--text-primary);
 }
 
@@ -1413,7 +1413,7 @@
 
 .page-alert-detail .alert-scope-segment {
   border-color: rgba(0, 255, 136, 0.16);
-  background: rgba(255,255,255,0.02);
+  background: var(--hairline-1);
 }
 
 .page-alert-detail .scope-chip {
@@ -1438,15 +1438,15 @@
 }
 
 .page-alert-detail .sibling-popup {
-  background: linear-gradient(180deg, rgba(26, 27, 31, 0.98), rgba(13, 14, 18, 0.98));
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--panel-gradient-strong);
+  border: 1px solid var(--hairline-4);
   box-shadow: var(--shadow-panel);
   color: var(--text-primary);
 }
 
 .page-alert-detail .sibling-popup__header,
 .page-alert-detail .sibling-popup__footer {
-  border-color: rgba(255,255,255,0.06);
+  border-color: var(--hairline-3);
 }
 
 .page-alert-detail .sibling-popup__dl dt {

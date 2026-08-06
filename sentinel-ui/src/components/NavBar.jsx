@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import './NavBar.css';
 
-export default function NavBar({ drawerOpen, setDrawerOpen }) {
+export default function NavBar({ drawerOpen, setDrawerOpen, theme, toggleTheme }) {
 
   const links = [
     { to: '/overview', label: 'Overview', code: '01' },
@@ -38,6 +38,15 @@ export default function NavBar({ drawerOpen, setDrawerOpen }) {
           <div className="cc-topbar__title">Fraud Monitoring Operations</div>
         </div>
         <div className="cc-topbar__meta">
+          <button
+            type="button"
+            className="cc-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
           <span className="cc-signal-dot" />
           Live Workspace
         </div>

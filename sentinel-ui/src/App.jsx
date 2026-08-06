@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import TransactionsPage from './components/transactions/TransactionsPage';
@@ -13,13 +13,27 @@ import { fetchAlerts } from './api/alertsApi';
 import './App.css';
 
 const STALE_MS = 30_000;
+const THEME_STORAGE_KEY = 'sentinel-theme';
 
 export default function App() {
   const [alerts, setAlerts]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return window.localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+  });
   const lastFetchedAt         = useRef(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   const loadAlerts = useCallback(async ({ background = false } = {}) => {
     if (!background) setLoading(true);
@@ -61,7 +75,7 @@ export default function App() {
 
   return (
     <div className={`app-shell${drawerOpen ? ' app-shell--drawer-open' : ''}`}>
-      <NavBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+      <NavBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} theme={theme} toggleTheme={toggleTheme} />
       <div className="app-content">
         <Routes>
           <Route path="/overview"
