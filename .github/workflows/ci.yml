@@ -93,6 +93,6 @@ jobs:
       - name: Build and push Docker images
         run: |
           docker buildx build --push --platform linux/amd64,linux/arm64 \
-            -t your-dockerhub-username/sentinel-backend:latest ./spring-Sentinel
+            -t ${{ secrets.DOCKER_USERNAME }}/sentinel-backend:latest ./spring-Sentinel
           docker buildx build --push --platform linux/amd64,linux/arm64 \
-            -t your-dockerhub-username/sentinel-frontend:latest ./sentinel-ui
+            -t ${{ secrets.DOCKER_USERNAME }}/sentinel-frontend:latest ./sentinel-ui
