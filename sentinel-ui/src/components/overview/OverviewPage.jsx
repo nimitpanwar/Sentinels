@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import OverviewLineChart from './OverviewLineChart';
-import { buildOverviewChartSeries, summarizeOverview } from '../../utils/overviewUtils';
+import OverviewBarChart from './OverviewBarChart';
+import OverviewHeatmap from './OverviewHeatmap';
+import { buildOverviewChartSeries, summarizeOverview, buildRiskHistogram, buildHourHeatmap } from '../../utils/overviewUtils';
 import './overview.css';
 
 export default function OverviewPage({ alerts, loading, error, onMount }) {
@@ -11,6 +13,8 @@ export default function OverviewPage({ alerts, loading, error, onMount }) {
 
   const summary = useMemo(() => summarizeOverview(alerts), [alerts]);
   const series = useMemo(() => buildOverviewChartSeries(alerts), [alerts]);
+  const histogram = useMemo(() => buildRiskHistogram(alerts), [alerts]);
+  const heatmap = useMemo(() => buildHourHeatmap(alerts), [alerts]);
 
   return (
     <div className="page-overview">
@@ -43,9 +47,9 @@ export default function OverviewPage({ alerts, loading, error, onMount }) {
 
           <section className="overview-grid overview-grid--cards">
             {summary.cards.map((card) => (
-              <article key={card.label} className="overview-card">
+              <article key={card.label} className="overview-card" style={{ '--card-accent': card.color }}>
                 <div className="overview-card__label">{card.label}</div>
-                <div className="overview-card__value">{card.value}</div>
+                <div className="overview-card__value" style={{ color: card.color }}>{card.value}</div>
                 <div className="overview-card__hint">{card.hint}</div>
               </article>
             ))}
@@ -60,6 +64,7 @@ export default function OverviewPage({ alerts, loading, error, onMount }) {
                 </div>
               </div>
               <OverviewLineChart points={series} />
+              <OverviewHeatmap cells={heatmap} />
             </article>
 
             <article className="overview-panel">
@@ -75,27 +80,19 @@ export default function OverviewPage({ alerts, loading, error, onMount }) {
             <article className="overview-panel">
               <div className="overview-panel__eyebrow">Severity Mix</div>
               <h2 className="overview-panel__title">Current distribution</h2>
-              <div className="overview-breakdown">
-                {summary.severityBreakdown.map((item) => (
-                  <div key={item.label} className="overview-breakdown__row">
-                    <span>{item.label}</span>
-                    <span className="mono">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+              <OverviewBarChart bars={summary.severityBreakdown} />
             </article>
 
             <article className="overview-panel">
               <div className="overview-panel__eyebrow">Status Mix</div>
               <h2 className="overview-panel__title">Workflow balance</h2>
-              <div className="overview-breakdown">
-                {summary.statusBreakdown.map((item) => (
-                  <div key={item.label} className="overview-breakdown__row">
-                    <span>{item.label}</span>
-                    <span className="mono">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+              <OverviewBarChart bars={summary.statusBreakdown} />
+            </article>
+
+            <article className="overview-panel">
+              <div className="overview-panel__eyebrow">Risk Score Distribution</div>
+              <h2 className="overview-panel__title">Score buckets</h2>
+              <OverviewBarChart bars={histogram} />
             </article>
           </section>
         </>

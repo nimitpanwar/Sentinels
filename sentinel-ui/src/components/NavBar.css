@@ -28,7 +28,7 @@
 }
 
 .cc-topbar__logo {
-  height: 108px;
+  height: 44px;
   width: auto;
   display: block;
 }
@@ -134,15 +134,11 @@
   margin-bottom: var(--space-8);
 }
 
-.cc-drawer__brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: var(--bg-deep);
-  font-weight: 800;
+.cc-drawer__brand-logo {
+  height: 72px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 .cc-drawer__brand-title {

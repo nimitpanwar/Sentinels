@@ -20,10 +20,10 @@ export function summarizeOverview(alerts) {
     escalated,
     todayCount,
     cards: [
-      { label: 'Total Alerts', value: totalAlerts, hint: 'Current fetched alert inventory' },
-      { label: 'Average Risk', value: averageRisk, hint: 'Average risk score across current snapshot' },
-      { label: 'Investigating', value: investigating, hint: 'Alerts currently in active review' },
-      { label: 'Opened Today', value: todayCount, hint: 'New alerts created during today' },
+      { label: 'Total Alerts', value: totalAlerts, hint: 'Current fetched alert inventory', color: '#7c83fd' },
+      { label: 'Average Risk', value: averageRisk, hint: 'Average risk score across current snapshot', color: '#facc15' },
+      { label: 'Investigating', value: investigating, hint: 'Alerts currently in active review', color: '#fb923c' },
+      { label: 'Opened Today', value: todayCount, hint: 'New alerts created during today', color: '#00ff88' },
     ],
     brief: [
       `${highSeverity} alert(s) are marked HIGH severity in the current dataset.`,
@@ -31,17 +31,47 @@ export function summarizeOverview(alerts) {
       totalAlerts === 0 ? 'No alert data is loaded yet.' : `Average network pressure equivalent from current risk values is ${averageRisk}.`,
     ],
     severityBreakdown: [
-      { label: 'High', value: alerts.filter(alert => alert.severity === 'HIGH').length },
-      { label: 'Mid', value: alerts.filter(alert => alert.severity === 'MID').length },
-      { label: 'Low', value: alerts.filter(alert => alert.severity === 'LOW').length },
+      { label: 'High', value: alerts.filter(alert => alert.severity === 'HIGH').length, color: '#f87171' },
+      { label: 'Mid', value: alerts.filter(alert => alert.severity === 'MID').length, color: '#fb923c' },
+      { label: 'Low', value: alerts.filter(alert => alert.severity === 'LOW').length, color: '#4ade80' },
     ],
     statusBreakdown: [
-      { label: 'Open', value: open },
-      { label: 'Acknowledged', value: alerts.filter(alert => alert.status === 'ACKNOWLEDGED').length },
-      { label: 'Investigating', value: investigating },
-      { label: 'Escalated', value: escalated },
+      { label: 'Open', value: open, color: '#7c83fd' },
+      { label: 'Acknowledged', value: alerts.filter(alert => alert.status === 'ACKNOWLEDGED').length, color: '#facc15' },
+      { label: 'Investigating', value: investigating, color: '#fb923c' },
+      { label: 'Escalated', value: escalated, color: '#f87171' },
     ],
   };
+}
+
+export function buildRiskHistogram(alerts) {
+  const buckets = [
+    { label: '0–19',   min: 0,  max: 19,  value: 0, color: '#4ade80' },
+    { label: '20–39',  min: 20, max: 39,  value: 0, color: '#a3e635' },
+    { label: '40–59',  min: 40, max: 59,  value: 0, color: '#facc15' },
+    { label: '60–79',  min: 60, max: 79,  value: 0, color: '#fb923c' },
+    { label: '80–100', min: 80, max: 100, value: 0, color: '#f87171' },
+  ];
+  for (const alert of alerts) {
+    const score = Number(alert.riskScore || 0);
+    for (const bucket of buckets) {
+      if (score >= bucket.min && score <= bucket.max) {
+        bucket.value += 1;
+        break;
+      }
+    }
+  }
+  return buckets;
+}
+
+export function buildHourHeatmap(alerts) {
+  const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, value: 0 }));
+  for (const alert of alerts) {
+    if (!alert.createdAt) continue;
+    const h = new Date(alert.createdAt).getHours();
+    hours[h].value += 1;
+  }
+  return hours;
 }
 
 export function buildOverviewChartSeries(alerts) {
